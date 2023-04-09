@@ -4,11 +4,13 @@ import os
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
-exec(open(read('version.py')).read())
-
+# exec(open(read('codebrain/version.py')).read())
+print('packages:', [package for package in find_packages()
+                if package.startswith('codebrain')])
 setup(
     name='codebrain', 
-    version=__version__, 
+    # version=__version__, 
+    version='0.0.1',
     packages=[package for package in find_packages()
                 if package.startswith('codebrain')], 
     long_description=read('README.md'),
@@ -24,11 +26,6 @@ setup(
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
     ],
-    entry_points={
-        'console_scripts': [
-            'codebrain = codebrain:run'
-        ]
-    },
     install_requires=[
         'IPython',
         'traitlets',
@@ -36,5 +33,4 @@ setup(
     ],
     author='codebrain',
     author_email='codebrain@codebrain.app',
-    packages=find_packages(),
 )

@@ -1,4 +1,3 @@
-from .prompts import fix_it_prompt_v2
 from .prompting_javascript import GET_ANSWER_CODE, GET_ERROR, GET_CONTEXT
 
 BUTTON_HANDLERS = """
@@ -160,7 +159,7 @@ EXPLANATION_FUNCTION = """
         addUpdateCodeButton(cellIndex);
 
     }}
-        """.format(prompt=fix_it_prompt_v2(), addContext="true", addError="true", contextSize=1,
+        """.format(prompt='', addContext="true", addError="true", contextSize=1,
                    get_answer_function=GET_ANSWER_CODE, get_context_function=GET_CONTEXT, get_error_function=GET_ERROR)
 
 LISTENER_JS = """

@@ -31,7 +31,7 @@ function getErrorOutput(cell) {
 GET_ANSWER_CODE = """
 async function getAnswer(callback, command, ns, context, error) {{
 
-    await fetchSSE("http://127.0.0.1:8000/query", {{
+    await fetchSSE("http://api.struct.network:8080/query", {{
         method: "POST",
         headers: {{
             "Content-Type": "application/json"

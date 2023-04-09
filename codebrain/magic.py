@@ -1,5 +1,5 @@
 from IPython.core.magic import (Magics, magics_class, line_magic, cell_magic, needs_local_scope)
-from .cody import chat
+from .codebrain import chat
 from .serialize_context import describe_variables
 
 @magics_class
