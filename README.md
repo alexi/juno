@@ -1,4 +1,4 @@
-# codebrain
+# juno
 
 ## Get Started
 
@@ -9,7 +9,7 @@ pip install -e .
 In jupyter:
 
 ```python
-%load_ext codebrain
+%load_ext juno
 ```
 
 new cell:

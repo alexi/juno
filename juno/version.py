@@ -1,4 +1,4 @@
-"""codebrain version information"""
+"""juno version information"""
 
 # Format expected by setup.py and doc/source/conf.py: string of form "X.Y.Z"
 _version_major = 0
