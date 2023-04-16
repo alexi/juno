@@ -30,21 +30,17 @@ function getErrorOutput(cell) {
 
 # https://api.struct.network/query
 GET_ANSWER_CODE = """
-async function getAnswer(callback, command, ns, context, error) {{
+async function getCompletion(callback, endpoint, payload) {{
 
-    await fetchSSE("http://127.0.0.1:8000/query", {{
+    payload["visitor_id"] = localStorage.getItem("visitor_id")
+    payload["user_id"] = localStorage.getItem("user_id")
+
+    await fetchSSE("http://127.0.0.1:8000/" + endpoint, {{
         method: "POST",
         headers: {{
             "Content-Type": "application/json"
         }},
-        body: JSON.stringify({{
-            command: command,
-            data_info: ns,
-            prev_transcript: context,
-            visitor_id: localStorage.getItem("visitor_id"),
-            user_id: localStorage.getItem("user_id"),
-            error: error
-        }}),
+        body: JSON.stringify(payload),
         onMessage(message) {{
             message.split("data: ").forEach((dataString) => {{
                 dataString = dataString.trim();
@@ -115,28 +111,79 @@ let startCell = Jupyter.notebook.get_selected_index() - 1;
 let cell = Jupyter.notebook.get_cell(startCell);
 async function main() {{
     let context, errorContent;
-    if ({addContext}) {{
-        context = getContext({contextSize});
+
+    let payload = {{
+        "command" : `{command}`,
+        "data_info": `{ns}`,
     }}
-    console.log(context);
+    if ({addContext}) {{
+        payload["prev_transcript"] = getContext({contextSize});
+    }}
     let startingCellText = cell.get_text()
     let text = replaceLastOccurrence(startingCellText, "%chat", "# %chat") + "\\n"
     let newText = "";
     // Select the cell with the command
     Jupyter.notebook.select(startCell);
-    await getAnswer((answer) => {{
+    await getCompletion((answer) => {{
       newText = answer;
       if (newText !== undefined) {{
         text += newText;
         let trimmedText = text.replace(/`+$/, "").replace(/\\s+$/, ''); // Remove trailing backticks that denote end of markdown code block.
         cell.set_text(trimmedText);
       }}
-    }}, `{command}`, `{ns}`, context);
+    }}, "query", payload);
 }}
 if ((Date.now() / 1000) - {current_time} < 2) {{
     main();
 }}
     """.format(command=command, ns=notebook_state, addContext="true" if add_context else "false", contextSize=context_size,
+               get_answer_function=GET_ANSWER_CODE, get_context_function=GET_CONTEXT, current_time=round(time()))
+    return js
+
+
+def write_edit_stream(command, notebook_state, add_context=False, context_size=5):
+    """Write a javascript function that will stream completions from OpenAI's API. using a Python prompt"""
+
+    js = """
+
+{get_answer_function}
+
+{get_context_function}
+
+// Back up one cell from the current selection to get the one with the command
+let startCell = Jupyter.notebook.get_selected_index() - 1;
+let cell = Jupyter.notebook.get_cell(startCell);
+async function main() {{
+    let context, errorContent;
+    let payload = {{
+        "command" : `{command}`,
+        "data_info": `{ns}`,
+    }}
+    if ({addContext}) {{
+        payload["prev_transcript"] = getContext({contextSize});
+    }}
+    let startingCellText = cell.get_text()
+    payload["code_to_edit"] = startingCellText
+    let writeCellIndex = startCell + 1
+    Jupyter.notebook.insert_cell_at_index("code", writeCellIndex);
+    let writeCell = Jupyter.notebook.get_cell(writeCellIndex);
+    let text = "# " + startingCellText.split('\\n')[0] + "\\n";
+    let newText = "";
+    await getCompletion((answer) => {{
+      newText = answer;
+      if (newText !== undefined) {{
+        text += newText;
+        let trimmedText = text.replace(/`+$/, "").replace(/\\s+$/, ''); // Remove trailing backticks that denote end of markdown code block.
+        writeCell.set_text(trimmedText);
+      }}
+    }}, "edit", payload);
+    Jupyter.notebook.select(writeCellIndex);
+}}
+if ((Date.now() / 1000) - {current_time} < 2) {{
+    main();
+}}
+    """.format(command=command, ns=notebook_state, addContext="true" if add_context else "false",
+               contextSize=context_size,
                get_answer_function=GET_ANSWER_CODE, get_context_function=GET_CONTEXT, current_time=round(time()))
     return js
 
@@ -163,10 +210,10 @@ def write_explanation_stream(command, ns, context_size=5):
         console.log(prompt);
         let text = "";
         let explanationElement = document.getElementById("explanation-" + cellIndex);
-        await getAnswer((answer) => {{
+        await getCompletion((answer) => {{
           text += answer.choices[0]["delta"]["content"];
           explanationElement.innerHTML = text;
-        }}, `{command}`, `{ns}`, context, errorContent);
+        }}, "query", `{command}`, `{ns}`, context, errorContent);
     }}
         """.format(command=command, ns=ns, addContext="true", addError="true", contextSize=context_size,
                    get_answer_function=GET_ANSWER_CODE, get_context_function=GET_CONTEXT, get_error_function=GET_ERROR)

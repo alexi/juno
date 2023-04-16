@@ -115,7 +115,7 @@ EXPLANATION_FUNCTION = """
         let currentParagraph = document.createElement('p');
         currentParagraph.classList.add('explanation-paragraph');
         explanationElement.appendChild(currentParagraph);
-        await getAnswer((answer) => {{
+        await getCompletion((answer) => {{
           let newText = answer.choices[0]["delta"]["content"];
           // if newText has a new line, create a new paragraph
           if (!parsingSubs && newText.includes('\\n')) {{
