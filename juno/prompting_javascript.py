@@ -28,13 +28,6 @@ function getErrorOutput(cell) {
 }
 """
 
-# {{
-#             command: command,
-#             data_info: ns,
-#             prev_transcript: context,
-#             error: error
-#         }}
-
 # https://api.struct.network/query
 GET_ANSWER_CODE = """
 async function getCompletion(callback, endpoint, payload) {{
