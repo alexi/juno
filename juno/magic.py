@@ -1,6 +1,6 @@
 from IPython.core.magic import (Magics, magics_class, line_magic, cell_magic, needs_local_scope)
 from .juno import chat
-from .serialize_context import describe_variables
+from .serialize_context import variable_description
 from .client_setup import setup
 
 @magics_class
@@ -9,7 +9,7 @@ class Assistant(Magics):
     @line_magic
     @needs_local_scope
     def chat(self, line, local_ns=None):
-        return chat(line, describe_variables(local_ns))
+        return chat(line, variable_description(local_ns))
 
 
 _loaded = False
