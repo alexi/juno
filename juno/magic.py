@@ -1,5 +1,5 @@
 from IPython.core.magic import (Magics, magics_class, line_magic, cell_magic, needs_local_scope)
-from .juno import chat
+from .juno import chat, edit
 from .serialize_context import variable_description
 from .client_setup import setup
 
@@ -11,6 +11,10 @@ class Assistant(Magics):
     def chat(self, line, local_ns=None):
         return chat(line, variable_description(local_ns))
 
+    @line_magic
+    @needs_local_scope
+    def edit(self, line, local_ns=None):
+        return edit(line, variable_description(local_ns))
 
 _loaded = False
 def load_ipython_extension(ip, **kwargs):
