@@ -43,8 +43,7 @@ async function getAnswer(callback, command, ns, context, error) {{
             error: error
         }}),
         onMessage(message) {{
-            const allEvents = message.replaceAll("data: ", "");
-            allEvents.split("\\n\\n").forEach((dataString) => {{
+            message.split("data: ").forEach((dataString) => {{
                 dataString = dataString.trim();
                 if (dataString.length === 0) {{
                     return;
