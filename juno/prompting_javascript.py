@@ -46,8 +46,7 @@ async function getAnswer(callback, command, ns, context, error) {{
             error: error
         }}),
         onMessage(message) {{
-            const allEvents = message.replaceAll("data: ", "");
-            allEvents.split("\\n\\n").forEach((dataString) => {{
+            message.split("data: ").forEach((dataString) => {{
                 dataString = dataString.trim();
                 if (dataString.length === 0) {{
                     return;
@@ -125,13 +124,13 @@ async function main() {{
             Jupyter.notebook.insert_cell_at_index("code", startCell + offset)
             cell = Jupyter.notebook.get_cell(startCell + offset);
             text = splitText[i];
-            let trimmedText = text.replace(/`+$/, ""); // Remove trailing backticks that denote end of markdown code block.
+            let trimmedText = text.replace(/`+$/, "").replace(/\\s+$/, ''); // Remove trailing backticks that denote end of markdown code block.
             cell.set_text(trimmedText);
         }}
       }}
       else if (newText !== undefined) {{
         text += newText;
-        let trimmedText = text.replace(/`+$/, ""); // Remove trailing backticks that denote end of markdown code block.
+        let trimmedText = text.replace(/`+$/, "").replace(/\\s+$/, ''); // Remove trailing backticks that denote end of markdown code block.
         cell.set_text(trimmedText);
       }}
     }}, `{command}`, `{ns}`, context);
