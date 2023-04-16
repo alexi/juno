@@ -28,10 +28,11 @@ function getErrorOutput(cell) {
 }
 """
 
+# https://api.struct.network/query
 GET_ANSWER_CODE = """
 async function getAnswer(callback, command, ns, context, error) {{
 
-    await fetchSSE("https://api.struct.network/query", {{
+    await fetchSSE("http://127.0.0.1:8000/query", {{
         method: "POST",
         headers: {{
             "Content-Type": "application/json"
@@ -40,6 +41,8 @@ async function getAnswer(callback, command, ns, context, error) {{
             command: command,
             data_info: ns,
             prev_transcript: context,
+            visitor_id: localStorage.getItem("visitor_id"),
+            user_id: localStorage.getItem("user_id"),
             error: error
         }}),
         onMessage(message) {{
@@ -81,6 +84,7 @@ async function* streamAsyncIterable(stream) {{
 
 async function fetchSSE(resource, options) {{
   const {{ onMessage, ...fetchOptions }} = options;
+  // fetchOptions.credentials = "include";
   const resp = await fetch(resource, fetchOptions);
   for await (const chunk of streamAsyncIterable(resp.body)) {{
     const message = new TextDecoder().decode(chunk);

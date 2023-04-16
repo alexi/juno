@@ -1,6 +1,7 @@
 from IPython.core.magic import (Magics, magics_class, line_magic, cell_magic, needs_local_scope)
 from .juno import chat
 from .serialize_context import describe_variables
+from .client_setup import setup
 
 @magics_class
 class Assistant(Magics):
@@ -17,6 +18,7 @@ def load_ipython_extension(ip, **kwargs):
     global _loaded
     if not _loaded:
         ip.register_magics(Assistant)
+        setup()
         _loaded = True
 
 def unload_ipython_extension(ip):
