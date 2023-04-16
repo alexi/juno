@@ -14,8 +14,8 @@ def describe_dataframe(df, max_cols=20) -> str:
     full_description = "\n".join(description)
     shape_description = f"Shape: {df.shape}"
     return shape_description + '\nColumns:\n' + full_description
-    
-    
+
+
 def truncate_value(value, max_length=50):
     value_str = ""
 
@@ -37,7 +37,7 @@ def truncate_value(value, max_length=50):
     return value_str
 
 
-def describe_variables(local_ns, max_value_length=50):
+def variable_description(local_ns, max_value_length=50):
     exclude_names = {'In', 'Out', 'get_ipython', 'exit', 'quit'}
 
     def is_user_defined(value):
@@ -49,7 +49,7 @@ def describe_variables(local_ns, max_value_length=50):
                 isinstance(value, traitlets.traitlets.MetaHasTraits)
         )
 
-    descriptions = []
+    variables = {}
     for name, value in local_ns.items():
         if (
                 not name.startswith('_') and
@@ -57,6 +57,5 @@ def describe_variables(local_ns, max_value_length=50):
                 is_user_defined(value)
         ):
             truncated_value = truncate_value(value, max_value_length)
-            description = f"{name}: {type(value).__name__}, value: {truncated_value}"
-            descriptions.append(description)
-    return "\n\n".join(descriptions)
+            variables[name] = {"type": type(value).__name__, "value": truncated_value }
+    return variables

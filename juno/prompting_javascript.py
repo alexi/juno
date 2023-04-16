@@ -93,7 +93,7 @@ async function fetchSSE(resource, options) {{
 
 """.format()
 
-def write_completion_stream(command, ns, add_context=False, context_size=5):
+def write_completion_stream(command, notebook_state, add_context=False, context_size=5):
     """Write a javascript function that will stream completions from OpenAI's API. using a Python prompt"""
     
     js = """
@@ -140,7 +140,7 @@ async function main() {{
 if ((Date.now() / 1000) - {current_time} < 2) {{
     main();
 }}
-    """.format(command=command, ns=ns, addContext="true" if add_context else "false", contextSize=context_size,
+    """.format(command=command, ns=notebook_state, addContext="true" if add_context else "false", contextSize=context_size,
                get_answer_function=GET_ANSWER_CODE, get_context_function=GET_CONTEXT, current_time=round(time()))
     return js
 
