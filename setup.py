@@ -4,15 +4,15 @@ import os
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
-# exec(open(read('codebrain/version.py')).read())
+# exec(open(read('juno/version.py')).read())
 print('packages:', [package for package in find_packages()
-                if package.startswith('codebrain')])
+                if package.startswith('juno')])
 setup(
-    name='codebrain', 
+    name='juno', 
     # version=__version__, 
     version='0.0.1',
     packages=[package for package in find_packages()
-                if package.startswith('codebrain')], 
+                if package.startswith('juno')], 
     long_description=read('README.md'),
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
@@ -31,6 +31,6 @@ setup(
         'traitlets',
         'notebook>=5.7.6',
     ],
-    author='codebrain',
-    author_email='codebrain@codebrain.app',
+    author='juno',
+    author_email='juno@juno.app',
 )
