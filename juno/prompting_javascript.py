@@ -102,40 +102,36 @@ def write_completion_stream(command, notebook_state, add_context=False, context_
 
 {get_context_function}
 
-let startCell = Jupyter.notebook.get_selected_index(); 
-let offset = 0
-Jupyter.notebook.insert_cell_at_index("code", startCell + offset);
-let cell = Jupyter.notebook.get_cell(startCell + offset);
+function replaceLastOccurrence(str, search, replacement) {{
+    let lastIndex = str.lastIndexOf(search);
+    if (lastIndex !== -1) {{
+        return str.slice(0, lastIndex) + replacement + str.slice(lastIndex + search.length);
+    }}
+    return str;
+}}
+
+// Back up one cell from the current selection to get the one with the command
+let startCell = Jupyter.notebook.get_selected_index() - 1;
+let cell = Jupyter.notebook.get_cell(startCell);
 async function main() {{
     let context, errorContent;
     if ({addContext}) {{
         context = getContext({contextSize});
     }}
     console.log(context);
-    let text = "";
+    let startingCellText = cell.get_text()
+    let text = replaceLastOccurrence(startingCellText, "%chat", "# %chat") + "\\n"
     let newText = "";
+    // Select the cell with the command
+    Jupyter.notebook.select(startCell);
     await getAnswer((answer) => {{
       newText = answer;
-      console.log("newText", newText);
-      if (newText !== undefined && newText.includes('—')) {{
-        let splitText = newText.split('—\\n');
-        for (let i = 1; i < splitText.length; i++) {{
-            offset += 1;
-            Jupyter.notebook.insert_cell_at_index("code", startCell + offset)
-            cell = Jupyter.notebook.get_cell(startCell + offset);
-            text = splitText[i];
-            let trimmedText = text.replace(/`+$/, "").replace(/\\s+$/, ''); // Remove trailing backticks that denote end of markdown code block.
-            cell.set_text(trimmedText);
-        }}
-      }}
-      else if (newText !== undefined) {{
+      if (newText !== undefined) {{
         text += newText;
         let trimmedText = text.replace(/`+$/, "").replace(/\\s+$/, ''); // Remove trailing backticks that denote end of markdown code block.
         cell.set_text(trimmedText);
       }}
     }}, `{command}`, `{ns}`, context);
-    // Select the first cell that has the code
-    Jupyter.notebook.select(startCell);
 }}
 if ((Date.now() / 1000) - {current_time} < 2) {{
     main();
@@ -143,6 +139,7 @@ if ((Date.now() / 1000) - {current_time} < 2) {{
     """.format(command=command, ns=notebook_state, addContext="true" if add_context else "false", contextSize=context_size,
                get_answer_function=GET_ANSWER_CODE, get_context_function=GET_CONTEXT, current_time=round(time()))
     return js
+
 
 def write_explanation_stream(command, ns, context_size=5):
     """Write a javascript function that will stream explanations from OpenAI's API. using a Python prompt"""
