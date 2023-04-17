@@ -16,6 +16,25 @@ addStyle(`
     .edit-btn:hover {
         color: blue;
     }
+    .edit-box-top {
+        border-top: 5px solid purple!important;
+        border-left: 5px solid purple!important;
+        border-right: 5px solid purple!important;
+        border-bottom: none;
+        margin-top: 4px;
+    }
+    .edit-box-bottom {
+        border-bottom: 5px solid purple!important;
+        border-left: 5px solid purple!important;
+        border-right: 5px solid purple!important;
+        border-top: none;
+    }
+    div.cell.selected.edit-box:before, div.cell.selected.edit-box.jupyter-soft-selected:before {
+        top: 2px;
+        left: 1px;
+        width: 5px;
+        height: calc(100% -  4px);
+    }
 `);
 
 
@@ -200,6 +219,8 @@ class EditZone {
     _init() {
         console.log("initializing edit zone for cell " + this.cell)
         removeEditButton(this.cell);
+        this.cell.element.addClass('edit-box-top');
+        this.cell.element.addClass('edit-box');
         this.addEditCell();
         this.showButtons();
     }
@@ -207,6 +228,8 @@ class EditZone {
     addEditCell() {
         let cellIndex = this.editCells.length === 0 ? Jupyter.notebook.find_cell_index(this.cell) : Jupyter.notebook.find_cell_index(this.editCells[this.editCells.length - 1]);
         let newCell = Jupyter.notebook.insert_cell_below('code', cellIndex)
+        newCell.element.addClass('edit-box-bottom');
+        newCell.element.addClass('edit-box');
         newCell.set_text("%edit ");
         this.editCells.push(newCell);
         setTimeout(() => {
@@ -224,6 +247,9 @@ class EditZone {
             Jupyter.notebook.delete_cell(cellIndex);
         }
         this.removeButtons();
+        this.cell.element.removeClass('edit-box-bottom');
+        this.cell.element.removeClass('edit-box-top');
+        this.cell.element.removeClass('edit-box');
         addEditButton(this.cell);
     }
     
