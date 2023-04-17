@@ -7,6 +7,8 @@ from .prompting_javascript import write_completion_stream
 
 def chat(command, notebook_state):
     completion_js = write_completion_stream(command, json.dumps(notebook_state), True, 5)
-    event_handler_js = BUTTON_HANDLERS + EXPLANATION_FUNCTION + LISTENER_JS
-    display(Javascript(completion_js + event_handler_js))
+    display(Javascript(completion_js))
     clear_output()
+    
+def hack():
+    display(Javascript(BUTTON_HANDLERS + EXPLANATION_FUNCTION + LISTENER_JS))

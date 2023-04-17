@@ -1,4 +1,5 @@
 from IPython.display import Javascript, display
+from .juno import hack
 
 HANDLE_USER_AUTH = """
 // Helper function to get the value of a cookie by name
@@ -38,3 +39,4 @@ if (!existingVisitorId) {
 
 def setup():
     display(Javascript(HANDLE_USER_AUTH))
+    hack()
