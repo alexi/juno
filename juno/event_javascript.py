@@ -17,23 +17,86 @@ addStyle(`
         color: blue;
     }
     .edit-box-top {
-        border-top: 5px solid purple!important;
-        border-left: 5px solid purple!important;
-        border-right: 5px solid purple!important;
-        border-bottom: none;
-        margin-top: 4px;
+        border-bottom: none!important;
+        border-width: 2px!important;
+        border-color: rgb(194, 194, 194)!important;
+        margin-top: 4px!important;
+        padding:11px!important;
+    }
+    .edit-box {
+        background-color: rgb(245, 245, 245);
     }
     .edit-box-bottom {
-        border-bottom: 5px solid purple!important;
-        border-left: 5px solid purple!important;
-        border-right: 5px solid purple!important;
-        border-top: none;
+        border-top: none!important;
+        border-width: 2px!important;
+        border-color: rgb(194, 194, 194)!important;
+        margin-bottom: 4px!important;
+        padding:11px!important;
     }
     div.cell.selected.edit-box:before, div.cell.selected.edit-box.jupyter-soft-selected:before {
-        top: 2px;
-        left: 1px;
+        top: 3px;
+        left: 3px;
         width: 5px;
-        height: calc(100% -  4px);
+        height: calc(100% -  6px);
+    }
+    
+    .juno-button-container {
+        display: flex;
+        justify-content: space-between;
+        width: fit-content;
+        margin-top: 10px;
+    }
+
+    .juno-button,
+    .cancel-button {
+        display: inline-block;
+        font-size: 13px;
+        font-weight: 600;
+        text-align: center;
+        text-decoration: none;
+        padding: 7px 16px;
+        border-radius: 2px;
+        color: #ffffff;
+        border: none;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+    }
+
+    .juno-button {
+        background-color: #0d257e;
+        color: #ffffff;
+    }
+
+    .cancel-button {
+        background-color: #f8f8f8;
+        color: #070707;
+    }
+
+    .juno-button:hover,
+    .cancel-button:hover {
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+        transform: translateY(-1px);
+    }
+
+    .juno-button:active,
+    .cancel-button:active {
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        transform: translateY(1px);
+    }
+    
+    .juno-button:disabled,
+    .cancel-button:disabled {
+        background-color: #cccccc;
+        color: #999999;
+        cursor: not-allowed;
+        box-shadow: none;
+        opacity:0.75;
+    }
+
+    .juno-button:disabled:hover,
+    .cancel-button:disabled:hover {
+        transform: none;
     }
 `);
 
@@ -66,6 +129,30 @@ function removeEditButton(cell) {
     }
 }
 
+function addAcceptCancel(cell) {
+    if (cell.element.find('.juno-button-container').length) {
+        return cell
+    }
+    let row = $('<div>', {class: 'juno-button-container'});
+    row.html(
+            '<button type="button" class="juno-button accept-button" style="margin-left: 89px;" onclick="window.JunoEditZones.accept(&#39;' + cell.cell_id + '&#39;)">Accept</button>' +
+            '<button type="button" class="cancel-button" style="margin-left: 5px;" onclick="window.JunoEditZones.cancel(&#39;' + cell.cell_id + '&#39;)">Cancel</button>'
+    );    
+    row.find('.accept-button').prop('disabled', true);
+    cell.element.append(row);
+    return cell;
+}
+
+function removeAcceptCancel(cell) {
+    if(cell == null) {
+        return;
+    }
+    let row = cell.element.find('.juno-button-container');
+    if(row.length){
+        row.remove();
+    }
+}
+
 function addAcceptButton(cell) {
     let buttonDiv = $('<div>', {class: 'accept'});
     let existing_button = cell.element.find('.accept-container');
@@ -81,13 +168,13 @@ function addAcceptButton(cell) {
 }
 
 function enableAcceptButton(cell) {
-    let existing_button = cell.element.find('.accept-container');
+    let existing_button = cell.element.find('.accept-button');
     if (!existing_button.length) {
-        addAcceptButton(cell);
+        addEditButtons(cell);
     }
-    existing_button = cell.element.find('.accept-container');
+    existing_button = cell.element.find('.accept-button');
     if (!existing_button.length) { return }
-    existing_button.find('button').prop('disabled', false);
+    existing_button.prop('disabled', false);
 }
 
 function removeAcceptButton(cell) {
@@ -276,12 +363,15 @@ class EditZone {
     }
     
     showButtons() {
-        addAcceptButton(this.editCells[this.editCells.length - 1]); 
-        addCancelButton(this.editCells[this.editCells.length - 1]); 
+        addAcceptCancel(this.editCells[this.editCells.length - 1]);
     }
     
     enableButtons() {
         enableAcceptButton(this.editCells[this.editCells.length - 1]);
+    }
+        
+    removeButtons() {
+        removeAcceptCancel(this.editCells[this.editCells.length - 1]);
     }
     
     containsCell(cell) {
@@ -292,11 +382,6 @@ class EditZone {
         }
         // return true if any editCells have cell_id === cellId
         return this.editCells.some(editCell => editCell.cell_id === cellId)
-    }
-        
-    removeButtons() {
-        removeAcceptButton(this.editCells[this.editCells.length - 1]);
-        removeCancelButton(this.editCells[this.editCells.length - 1]);
     }
     
     accept(cell_id) {
