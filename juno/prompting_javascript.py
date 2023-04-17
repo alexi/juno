@@ -1,11 +1,11 @@
 from time import time
 
 GET_CONTEXT = """
-function getContext(contextSize) {{
+function getContext(contextSize, offsetCells) {{
     let prevCellContents = [];
     const cells = Jupyter.notebook.get_cells();
     const currentCellIndex = Jupyter.notebook.get_selected_index();
-    for (let i = currentCellIndex - 1; i >= Math.max(0, currentCellIndex - 1 - contextSize); i--) {{
+    for (let i = currentCellIndex - 1 - offsetCells; i >= Math.max(0, currentCellIndex - 1 - contextSize); i--) {{
         let cell = cells[i];
         let cellContents = cell.get_text()
         // Don't include the prompt in the context
@@ -15,6 +15,15 @@ function getContext(contextSize) {{
     }}
     return prevCellContents.join("\\n###\\n");
 }}
+
+function replaceLastOccurrence(str, search, replacement) {{
+    let lastIndex = str.lastIndexOf(search);
+    if (lastIndex !== -1) {{
+        return str.slice(0, lastIndex) + replacement + str.slice(lastIndex + search.length);
+    }}
+    return str;
+}}
+
 """.format()  # Formatting because of the double brackets included.
 
 GET_ERROR = """
@@ -98,14 +107,6 @@ def write_completion_stream(command, notebook_state, add_context=False, context_
 
 {get_context_function}
 
-function replaceLastOccurrence(str, search, replacement) {{
-    let lastIndex = str.lastIndexOf(search);
-    if (lastIndex !== -1) {{
-        return str.slice(0, lastIndex) + replacement + str.slice(lastIndex + search.length);
-    }}
-    return str;
-}}
-
 // Back up one cell from the current selection to get the one with the command
 let startCell = Jupyter.notebook.get_selected_index() - 1;
 let cell = Jupyter.notebook.get_cell(startCell);
@@ -117,7 +118,7 @@ async function main() {{
         "data_info": `{ns}`,
     }}
     if ({addContext}) {{
-        payload["prev_transcript"] = getContext({contextSize});
+        payload["prev_transcript"] = getContext({contextSize}, 0);
     }}
     let startingCellText = cell.get_text()
     let text = replaceLastOccurrence(startingCellText, "%chat", "# %chat") + "\\n"
@@ -150,8 +151,10 @@ def write_edit_stream(command, notebook_state, add_context=False, context_size=5
 
 {get_context_function}
 
-// Back up one cell from the current selection to get the one with the command
+// Cell with the command
 let startCell = Jupyter.notebook.get_selected_index() - 1;
+// Cell with code to be edited
+let prevCell = Jupyter.notebook.get_cell(startCell - 1)
 let cell = Jupyter.notebook.get_cell(startCell);
 async function main() {{
     let context, errorContent;
@@ -160,21 +163,19 @@ async function main() {{
         "data_info": `{ns}`,
     }}
     if ({addContext}) {{
-        payload["prev_transcript"] = getContext({contextSize});
+        payload["prev_transcript"] = getContext({contextSize}, 2);
     }}
     let startingCellText = cell.get_text()
-    payload["code_to_edit"] = startingCellText
-    let writeCellIndex = startCell + 1
-    Jupyter.notebook.insert_cell_at_index("code", writeCellIndex);
-    let writeCell = Jupyter.notebook.get_cell(writeCellIndex);
-    let text = "# " + startingCellText.split('\\n')[0] + "\\n";
+    payload["code_to_edit"] = prevCell.get_text()
+    let text = replaceLastOccurrence(startingCellText, "%edit", "# %edit") + "\\n"
     let newText = "";
+    Jupyter.notebook.select(startCell);
     await getCompletion((answer) => {{
       newText = answer;
       if (newText !== undefined) {{
         text += newText;
         let trimmedText = text.replace(/`+$/, "").replace(/\\s+$/, ''); // Remove trailing backticks that denote end of markdown code block.
-        writeCell.set_text(trimmedText);
+        cell.set_text(trimmedText);
       }}
     }}, "edit", payload);
     Jupyter.notebook.select(writeCellIndex);
