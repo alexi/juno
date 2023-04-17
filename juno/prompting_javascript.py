@@ -39,7 +39,8 @@ function getErrorOutput(cell) {
 
 # https://api.struct.network/query
 GET_ANSWER_CODE = """
-async function getCompletion(callback, endpoint, payload) {{
+async function getCompletion(callback, endpoint, payload, doneCallback) {{
+    console.log("doneCallback", doneCallback)
 
     payload["visitor_id"] = localStorage.getItem("visitor_id")
     payload["user_id"] = localStorage.getItem("user_id")
@@ -58,6 +59,9 @@ async function getCompletion(callback, endpoint, payload) {{
                 }}
                 else if (dataString === "[DONE]") {{
                     console.log("COMPLETED receiving response ");
+                    if (doneCallback !== undefined) {{
+                        doneCallback();
+                    }}
                     return;
                 }}
                 try {{
@@ -68,6 +72,12 @@ async function getCompletion(callback, endpoint, payload) {{
                 }}
             }});
         }},
+        onDone() {{
+            console.log("Done");
+            if (doneCallback !== undefined) {{
+                doneCallback();
+            }}
+        }}
     }});
 }}
 
@@ -93,6 +103,9 @@ async function fetchSSE(resource, options) {{
   for await (const chunk of streamAsyncIterable(resp.body)) {{
     const message = new TextDecoder().decode(chunk);
     onMessage(message);
+  }}
+  if(fetchOptions.onDone !== undefined) {{
+    fetchOptions.onDone();
   }}
 }}
 
@@ -123,6 +136,10 @@ async function main() {{
     let newText = "";
     // Select the cell with the command
     Jupyter.notebook.select(startCell);
+    let cell_id = cell.cell_id;
+    var done = () => {{
+        window.JunoEditZones.handleDoneStreaming('chat', cell_id)
+    }}
     await getCompletion((answer) => {{
       newText = answer;
       if (newText !== undefined) {{
@@ -130,7 +147,7 @@ async function main() {{
         let trimmedText = text.replace(/`+$/, "").replace(/\\s+$/, ''); // Remove trailing backticks that denote end of markdown code block.
         cell.set_text(trimmedText);
       }}
-    }}, "query", payload);
+    }}, "query", payload, done);
 }}
 if ((Date.now() / 1000) - {current_time} < 2) {{
     main();
@@ -168,6 +185,10 @@ async function main() {{
     let text = replaceLastOccurrence(startingCellText, "%edit", "# %edit") + "\\n"
     let newText = "";
     Jupyter.notebook.select(startCell);
+    let cell_id = cell.cell_id;
+    var done = () => {{
+        window.JunoEditZones.handleDoneStreaming('edit', cell_id)
+    }}
     await getCompletion((answer) => {{
       newText = answer;
       if (newText !== undefined) {{
@@ -175,8 +196,8 @@ async function main() {{
         let trimmedText = text.replace(/`+$/, "").replace(/\\s+$/, ''); // Remove trailing backticks that denote end of markdown code block.
         cell.set_text(trimmedText);
       }}
-    }}, "edit", payload);
-    Jupyter.notebook.select(writeCellIndex);
+    }}, "edit", payload, done);
+    Jupyter.notebook.select(startCell);
 }}
 if ((Date.now() / 1000) - {current_time} < 2) {{
     main();

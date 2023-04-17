@@ -53,11 +53,22 @@ function addAcceptButton(cell) {
     if (!existing_button.length) {
         buttonDiv.html(
             '<div class="accept-container">' +
-            '  <button type="button" style="margin-left: 94px;" onclick="window.EDIT_ZONES.accept(&#39;' + cell.cell_id + '&#39;)">Accept</button>' +
+            '  <button type="button" style="margin-left: 94px;" onclick="window.JunoEditZones.accept(&#39;' + cell.cell_id + '&#39;)">Accept</button>' +
             '</div>');
+        buttonDiv.find('button').prop('disabled', true);
         cell.element.append(buttonDiv);
     }
     return cell;
+}
+
+function enableAcceptButton(cell) {
+    let existing_button = cell.element.find('.accept-container');
+    if (!existing_button.length) {
+        addAcceptButton(cell);
+    }
+    existing_button = cell.element.find('.accept-container');
+    if (!existing_button.length) { return }
+    existing_button.find('button').prop('disabled', false);
 }
 
 function removeAcceptButton(cell) {
@@ -70,11 +81,34 @@ function removeAcceptButton(cell) {
     }
 }
 
+function addCancelButton(cell) {
+    let buttonDiv = $('<div>', {class: 'cancel'});
+    let existing_button = cell.element.find('.cancel-container');
+    if (!existing_button.length) {
+        buttonDiv.html(
+            '<div class="cancel-container">' +
+            '  <button type="button" style="margin-left: 94px;" onclick="window.JunoEditZones.cancel(&#39;' + cell.cell_id + '&#39;)">Cancel</button>' +
+            '</div>');
+        cell.element.append(buttonDiv);
+    }
+    return cell;
+}
+
+function removeCancelButton(cell) {
+    if(cell == null) {
+        return;
+    }
+    let existing_button = cell.element.find('.cancel-container');
+    if(existing_button.length){
+        existing_button.remove();
+    }
+}
+
 function openEditor(cellId) {
     console.log("opening editor for cell " + cellId)
-    console.log("edit zones:", window.EDIT_ZONES)
+    console.log("edit zones:", window.JunoEditZones)
     let cell = Jupyter.notebook.get_cells().find(cell => cell.cell_id == cellId);
-    window.EDIT_ZONES.createZone(cell);
+    window.JunoEditZones.createZone(cell);
 }
 
 function addFixButton(cell, i) {
@@ -144,11 +178,10 @@ function addRemoveButtons(addOnly) {
 }
 
 function addEditButtons() {
-    console.log("adding edit buttons")
     let cells = Jupyter.notebook.get_cells();
     for (let i = 0; i < cells.length; i++) {
         let cell = cells[i];
-        if (cell.cell_type === 'code' && !window.EDIT_ZONES.isEditCell(cell)) {
+        if (cell.cell_type === 'code' && !window.JunoEditZones.isEditCell(cell)) {
             addEditButton(cell, i);
         }
     }
@@ -218,27 +251,35 @@ class EditZone {
     
     showButtons() {
         addAcceptButton(this.editCells[this.editCells.length - 1]); 
+        addCancelButton(this.editCells[this.editCells.length - 1]); 
     }
     
     enableButtons() {
-        
+        enableAcceptButton(this.editCells[this.editCells.length - 1]);
     }
     
     containsCell(cell) {
-        if (this.cell.cell_id === cell.cell_id){
+        // if cell is str, set sellId to cell. else set to cell.cell_id
+        let cellId = typeof cell === 'string' ? cell : cell.cell_id;
+        if (this.cell.cell_id === cellId){
             return true
         }
-        // return true if any editCells have cell_id === cell.cell_id
-        return this.editCells.some(editCell => editCell.cell_id === cell.cell_id)
+        // return true if any editCells have cell_id === cellId
+        return this.editCells.some(editCell => editCell.cell_id === cellId)
     }
         
     removeButtons() {
         removeAcceptButton(this.editCells[this.editCells.length - 1]);
+        removeCancelButton(this.editCells[this.editCells.length - 1]);
     }
     
     accept(cell_id) {
         this.cell.set_text(this.editCells[this.editCells.length - 1].get_text());
         this.accepted = true;
+        this.close();
+    }
+    
+    cancel() {
         this.close();
     }
 }
@@ -253,8 +294,8 @@ class EditZoneManager {
         this.editZones = {};
     }
     
-    getZone(cell_id) {
-        return this.editZones[cell_id];
+    getZone(cellId) {
+        return this.editZones[cellId];
     }
     
     isEditCell(cell){
@@ -286,18 +327,41 @@ class EditZoneManager {
         }
     }
     
-    accept(cell_id) {
+    accept(cellId) {
         for(const [key, zone] of Object.entries(this.editZones)) {
-            if (zone.cell.cell_id === cell_id) {
+            if (zone.cell.cell_id === cellId) {
                 zone.accept();
                 delete this.editZones[key];
                 return;
             }
             for (const editCell of zone.editCells) {
-                if (editCell.cell_id === cell_id) {
+                if (editCell.cell_id === cellId) {
                     zone.accept();
                     delete this.editZones[key];
                     return;
+                }
+            }
+        }
+    }
+    
+    cancel(cellId) {
+        for(const [key, zone] of Object.entries(this.editZones)) {
+            if(zone.containsCell(cellId)) {
+                zone.cancel();
+                delete this.editZones[key];
+            }
+        }
+    }
+    
+    handleDoneStreaming(streamType, cellId) {
+        console.log("here")
+        if(streamType === "edit") {
+            let cell = Jupyter.notebook.get_cells().find(cell => cell.cell_id == cellId);
+            if(cell) {
+                for(const [key, zone] of Object.entries(this.editZones)) {
+                    if(zone.containsCell(cell)) {
+                        zone.enableButtons();
+                    }
                 }
             }
         }
@@ -399,8 +463,8 @@ EXPLANATION_FUNCTION = """
                    get_answer_function=GET_ANSWER_CODE, get_context_function=GET_CONTEXT, get_error_function=GET_ERROR)
 
 LISTENER_JS = """
-if(!window.EDIT_ZONES){
-    window.EDIT_ZONES = new EditZoneManager();
+if(!window.JunoEditZones){
+    window.JunoEditZones = new EditZoneManager();
 }
 if(!window.juno_initialized){
     window.openEditor = openEditor;
@@ -414,8 +478,8 @@ if(!window.juno_initialized){
         setTimeout(() => addEditButtons(), 400)
     });
     setInterval(() => addEditButtons(), 3000);
-    // when cell is deleted call EDIT_ZONES.handleDeleteCell
-    Jupyter.notebook.events.on('delete.Cell', (event, data) => EDIT_ZONES.handleDeleteCell(data.cell));
+    // when cell is deleted call JunoEditZones.handleDeleteCell
+    Jupyter.notebook.events.on('delete.Cell', (event, data) => JunoEditZones.handleDeleteCell(data.cell));
     addEditButtons();
     setTimeout(() => addEditButtons(), 600);
     console.log("loaded listener js");

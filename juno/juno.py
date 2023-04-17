@@ -12,7 +12,7 @@ def chat(command, notebook_state):
     display(Javascript(LISTENER_JS + completion_js))
     clear_output()
     
-    
+
 def hack():
     display(Javascript(BUTTON_HANDLERS + EXPLANATION_FUNCTION + LISTENER_JS))
 
