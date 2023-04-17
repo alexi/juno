@@ -1,3 +1,4 @@
+import base64
 import json
 from IPython.display import Javascript, clear_output, display, HTML
 
@@ -6,7 +7,8 @@ from .prompting_javascript import write_edit_stream, write_completion_stream
 
 
 def chat(command, notebook_state):
-    completion_js = write_completion_stream(command, json.dumps(notebook_state), True, 5)
+    encoded_nb_state = base64.b64encode(json.dumps(notebook_state).encode('utf-8')).decode('utf-8')
+    completion_js = write_completion_stream(command, encoded_nb_state, True, 5)
     display(Javascript(LISTENER_JS + completion_js))
     clear_output()
     
@@ -16,6 +18,7 @@ def hack():
 
 
 def edit(command, notebook_state):
-    completion_js = write_edit_stream(command, json.dumps(notebook_state), True, 5)
+    encoded_nb_state = base64.b64encode(json.dumps(notebook_state).encode('utf-8')).decode('utf-8')
+    completion_js = write_edit_stream(command, encoded_nb_state, True, 5)
     display(Javascript(LISTENER_JS + completion_js))
     clear_output()
