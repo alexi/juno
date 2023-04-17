@@ -7,7 +7,7 @@ from .prompting_javascript import write_edit_stream, write_completion_stream
 
 def chat(command, notebook_state):
     completion_js = write_completion_stream(command, json.dumps(notebook_state), True, 5)
-    display(Javascript(completion_js))
+    display(Javascript(LISTENER_JS + completion_js))
     clear_output()
     
     
@@ -17,5 +17,5 @@ def hack():
 
 def edit(command, notebook_state):
     completion_js = write_edit_stream(command, json.dumps(notebook_state), True, 5)
-    display(Javascript(completion_js))
+    display(Javascript(LISTENER_JS + completion_js))
     clear_output()

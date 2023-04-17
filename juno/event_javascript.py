@@ -20,7 +20,6 @@ addStyle(`
 
 
 function addEditButton(cell) {
-    console.log("adding edit button to cell " + cell.cell_id)
     let buttonDiv = $('<div style="display:inline">', {class: 'edit'});
     let input_below_div = cell.element.find('.input_prompt');
     if(!input_below_div) {
@@ -30,7 +29,6 @@ function addEditButton(cell) {
     input_below_div.css('align-items', 'center')
     input_below_div.css('height', '30px')
     let existing_button = cell.element.find('.edit-btn');
-    console.log("existing_button:", existing_button)
     if (!existing_button.length) {
         buttonDiv.html(
             '<button class="edit-btn" type="button" style="height:19px;width:26px;margin-right:5px;font-size:25px;margin-top:1px;border-width:0px;background-color:white;overflow:visible" onclick="window.openEditor(&#39;' + cell.cell_id + '&#39;)">✎</button>'
@@ -50,7 +48,6 @@ function removeEditButton(cell) {
 }
 
 function addAcceptButton(cell) {
-    
     let buttonDiv = $('<div>', {class: 'accept'});
     let existing_button = cell.element.find('.accept-container');
     if (!existing_button.length) {
@@ -64,6 +61,9 @@ function addAcceptButton(cell) {
 }
 
 function removeAcceptButton(cell) {
+    if(cell == null) {
+        return;
+    }
     let existing_button = cell.element.find('.accept-container');
     if(existing_button.length){
         existing_button.remove();
@@ -160,6 +160,7 @@ class EditZone {
     constructor(cell) {
         this.cell = cell;
         this.editCells = [];
+        this.accepted = false;
         this._init();
     }
     
@@ -175,28 +176,70 @@ class EditZone {
         let newCell = Jupyter.notebook.insert_cell_below('code', cellIndex)
         newCell.set_text("%edit ");
         this.editCells.push(newCell);
-        Jupyter.notebook.select(cellIndex + 1);
+        setTimeout(() => {
+            console.log("selecting cell " + cellIndex + 1)
+            Jupyter.notebook.select(cellIndex + 1);
+            newCell.focus_editor()
+        }, 200);
+    }
+    
+    close() {
+        for (let i = 0; i < this.editCells.length; i++) {
+            // get cell index from cell id
+            let cellId = this.editCells[i].cell_id;
+            let cellIndex = Jupyter.notebook.get_cells().findIndex(cell => cell.cell_id == cellId);            
+            Jupyter.notebook.delete_cell(cellIndex);
+        }
+        this.removeButtons();
+        addEditButton(this.cell);
+    }
+    
+    handleDeleteCell(cell) {
+        if (this.accepted) {
+            return;
+        }
+        console.log("handling delete cell", cell)
+        if (this.cell.cell_id === cell.cell_id) {
+            this.cell = this.editCells[this.editCells.length - 1];
+            this.editCells.splice(this.editCells.length - 1, 1);
+            this.close()
+            return true;
+        }
+        if (this.editCells.some(editCell => editCell.cell_id === cell.cell_id)) {
+            console.log("edit cells includes cell")
+            this.editCells.splice(this.editCells.indexOf(cell), 1);
+            if (this.editCells.length === 0) {
+                this.close()
+                return true;
+            }
+        }
+        return false;
     }
     
     showButtons() {
-        addAcceptButton(this.cell); 
+        addAcceptButton(this.editCells[this.editCells.length - 1]); 
     }
     
     enableButtons() {
-    
+        
     }
     
+    containsCell(cell) {
+        if (this.cell.cell_id === cell.cell_id){
+            return true
+        }
+        // return true if any editCells have cell_id === cell.cell_id
+        return this.editCells.some(editCell => editCell.cell_id === cell.cell_id)
+    }
+        
     removeButtons() {
         removeAcceptButton(this.editCells[this.editCells.length - 1]);
     }
     
     accept(cell_id) {
-        this.removeButtons();
         this.cell.set_text(this.editCells[this.editCells.length - 1].get_text());
-        for (let i = 0; i < this.editCells.length; i++) {
-            Jupyter.notebook.delete_cell(this.editCells[i]);
-        }
-        addEditButton(this.cell);
+        this.accepted = true;
+        this.close();
     }
 }
 
@@ -216,13 +259,8 @@ class EditZoneManager {
     
     isEditCell(cell){
         for(const zone of Object.values(this.editZones)) {
-            if (zone.cell === cell) {
+            if(zone.containsCell(cell)) {
                 return true;
-            }
-            for (const editCell of zone.editCells) {
-                if (editCell === cell) {
-                    return true;
-                }
             }
         }
     }
@@ -236,20 +274,29 @@ class EditZoneManager {
     }
     
     handleDeleteCell(cell) {
-        // TODO: handle delete cell
+        for(const [key, zone] of Object.entries(this.editZones)) {
+            if(zone.containsCell(cell)) {
+                console.log("zone:", zone, "contains cell:", cell)
+                let isClosed = zone.handleDeleteCell(cell);
+                if(isClosed) {
+                    console.log("zone", key, "closed")
+                    delete this.editZones[key];
+                }
+            }
+        }
     }
     
     accept(cell_id) {
-        for(const zone of Object.values(this.editZones)) {
+        for(const [key, zone] of Object.entries(this.editZones)) {
             if (zone.cell.cell_id === cell_id) {
                 zone.accept();
-                delete this.editZones[cell_id];
+                delete this.editZones[key];
                 return;
             }
             for (const editCell of zone.editCells) {
                 if (editCell.cell_id === cell_id) {
                     zone.accept();
-                    delete this.editZones[cell_id];
+                    delete this.editZones[key];
                     return;
                 }
             }
@@ -355,15 +402,24 @@ LISTENER_JS = """
 if(!window.EDIT_ZONES){
     window.EDIT_ZONES = new EditZoneManager();
 }
-window.openEditor = openEditor;
-Jupyter.notebook.events.off('output_appended.OutputArea');
-Jupyter.notebook.events.off('execute.CodeCell');
-Jupyter.notebook.events.on('output_appended.OutputArea', () => setTimeout( () => addRemoveButtons(true), 200));
-Jupyter.notebook.events.on('execute.CodeCell', () => setTimeout(() => addRemoveButtons(false), 50));
-// when cell is created, add edit button
-Jupyter.notebook.events.on('create.Cell', () => setTimeout(() => addEditButtons(true), 150));
-addEditButtons();
-setTimeout(() => addEditButtons(), 600);
-window.addEditButtons()
-console.log("loaded listener js");
+if(!window.juno_initialized){
+    window.openEditor = openEditor;
+    Jupyter.notebook.events.off('output_appended.OutputArea');
+    Jupyter.notebook.events.off('execute.CodeCell');
+    Jupyter.notebook.events.on('output_appended.OutputArea', () => setTimeout( () => addRemoveButtons(true), 200));
+    Jupyter.notebook.events.on('execute.CodeCell', () => setTimeout(() => addRemoveButtons(false), 50));
+    // when cell is created, add edit button
+    Jupyter.notebook.events.on('create.Cell', () => {
+        setTimeout(() => addEditButtons(), 150)
+        setTimeout(() => addEditButtons(), 400)
+    });
+    setInterval(() => addEditButtons(), 3000);
+    // when cell is deleted call EDIT_ZONES.handleDeleteCell
+    Jupyter.notebook.events.on('delete.Cell', (event, data) => EDIT_ZONES.handleDeleteCell(data.cell));
+    addEditButtons();
+    setTimeout(() => addEditButtons(), 600);
+    console.log("loaded listener js");
+    window.juno_initialized = true;
+}
+
 """
