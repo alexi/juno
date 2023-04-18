@@ -326,14 +326,23 @@ class EditZone {
         }, 200);
     }
     
-    close() {
+    close(accepted) {
+        this.removeButtons();
         for (let i = 0; i < this.editCells.length; i++) {
             // get cell index from cell id
             let cellId = this.editCells[i].cell_id;
-            let cellIndex = Jupyter.notebook.get_cells().findIndex(cell => cell.cell_id == cellId);            
-            Jupyter.notebook.delete_cell(cellIndex);
+            let editCellIndex = Jupyter.notebook.get_cells().findIndex(cell => cell.cell_id == cellId);
+            let originalCellIndex = editCellIndex - 1;
+
+            if (accepted) { // if edit is accepted, delete original and replace with the edit cell
+                Jupyter.notebook.delete_cell(originalCellIndex);
+                this.cell = Jupyter.notebook.get_cell(originalCellIndex);
+            }
+            else {
+                Jupyter.notebook.delete_cell(editCellIndex);
+            }
         }
-        this.removeButtons();
+
         this.cell.element.removeClass('edit-box-bottom');
         this.cell.element.removeClass('edit-box-top');
         this.cell.element.removeClass('edit-box');
@@ -385,13 +394,13 @@ class EditZone {
     }
     
     accept(cell_id) {
-        this.cell.set_text(this.editCells[this.editCells.length - 1].get_text());
+        //this.cell.set_text(this.editCells[this.editCells.length - 1].get_text());
         this.accepted = true;
-        this.close();
+        this.close(true);
     }
     
     cancel() {
-        this.close();
+        this.close(false);
     }
 }
 
@@ -465,13 +474,13 @@ class EditZoneManager {
     }
     
     handleDoneStreaming(streamType, cellId) {
-        console.log("here")
-        if(streamType === "edit") {
+        if (streamType === "edit") {
             let cell = Jupyter.notebook.get_cells().find(cell => cell.cell_id == cellId);
-            if(cell) {
-                for(const [key, zone] of Object.entries(this.editZones)) {
-                    if(zone.containsCell(cell)) {
+            if (cell) {
+                for (const [key, zone] of Object.entries(this.editZones)) {
+                    if (zone.containsCell(cell)) {
                         zone.enableButtons();
+                        cell.execute()
                     }
                 }
             }
