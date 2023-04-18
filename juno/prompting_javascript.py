@@ -73,7 +73,6 @@ async function getCompletion(callback, endpoint, payload, doneCallback) {{
             }});
         }},
         onDone() {{
-            console.log("Done");
             if (doneCallback !== undefined) {{
                 doneCallback();
             }}
