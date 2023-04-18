@@ -394,7 +394,6 @@ class EditZone {
     }
     
     accept(cell_id) {
-        //this.cell.set_text(this.editCells[this.editCells.length - 1].get_text());
         this.accepted = true;
         this.close(true);
     }
