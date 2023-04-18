@@ -323,6 +323,7 @@ class EditZone {
             console.log("selecting cell " + cellIndex + 1)
             Jupyter.notebook.select(cellIndex + 1);
             newCell.focus_editor()
+            newCell.code_mirror.setCursor({line:0, ch: 6})
         }, 200);
     }
     
