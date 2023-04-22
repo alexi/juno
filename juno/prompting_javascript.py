@@ -156,7 +156,7 @@ if ((Date.now() / 1000) - {current_time} < 2) {{
     return js
 
 
-def write_edit_stream(command, notebook_state, add_context=False, context_size=5):
+def write_edit_stream(command, notebook_state, add_context=False, context_size=5, add_error=False):
     """Write a javascript function that will stream completions from OpenAI's API. using a Python prompt"""
 
     js = """
@@ -165,8 +165,12 @@ def write_edit_stream(command, notebook_state, add_context=False, context_size=5
 
 {get_context_function}
 
+{get_error_function}
+
 // Cell with the command
-let startCell = Jupyter.notebook.get_selected_index() - 1;
+// if we are adding an error message we are using the debug flow.
+// In that case the execution is automatic so the notebook doesn't jump to the next cell.
+let startCell = Jupyter.notebook.get_selected_index() -  ({addError} ? 0 : 1);
 // Cell with code to be edited
 let prevCell = Jupyter.notebook.get_cell(startCell - 1)
 let cell = Jupyter.notebook.get_cell(startCell);
@@ -179,31 +183,37 @@ async function main() {{
     if ({addContext}) {{
         payload["prev_transcript"] = getContext({contextSize}, 2);
     }}
+    if ({addError}) {{
+        payload["prev_error"] = getErrorOutput(prevCell);
+    }}
     let startingCellText = cell.get_text()
     payload["code_to_edit"] = prevCell.get_text()
-    let text = replaceLastOccurrence(startingCellText, "%edit", "# %edit") + "\\n"
+    let noDebugText = replaceLastOccurrence(startingCellText, "%debug ", "")
+    let text = replaceLastOccurrence(noDebugText, "%edit", "# %edit") + "\\n"
     let newText = "";
     Jupyter.notebook.select(startCell);
     let cell_id = cell.cell_id;
     var done = () => {{
         window.JunoEditZones.handleDoneStreaming('edit', cell_id)
     }}
+    let endpoint = {addError} ? "debug" : "edit";
     await getCompletion((answer) => {{
       newText = answer;
       if (newText !== undefined) {{
         text += newText;
-        let trimmedText = text.replace(/`+$/, "").replace(/\\s+$/, ''); // Remove trailing backticks that denote end of markdown code block.
+        // Remove trailing backticks that denote end of markdown code block.
+        let trimmedText = text.replace(/`+$/, "").replace(/\\s+$/, "").replace(/^\\n+/, ""); 
         cell.set_text(trimmedText);
       }}
-    }}, "edit", payload, done);
+    }}, endpoint, payload, done);
     Jupyter.notebook.select(startCell);
 }}
 if ((Date.now() / 1000) - {current_time} < 2) {{
     main();
 }}
     """.format(command=command, ns=notebook_state, addContext="true" if add_context else "false",
-               contextSize=context_size,
-               get_answer_function=GET_ANSWER_CODE, get_context_function=GET_CONTEXT, current_time=round(time()))
+               contextSize=context_size, addError="true" if add_error else "false",
+               get_answer_function=GET_ANSWER_CODE, get_context_function=GET_CONTEXT, get_error_function=GET_ERROR, current_time=round(time()))
     return js
 
 
