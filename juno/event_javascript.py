@@ -46,6 +46,9 @@ addStyle(`
         width: fit-content;
         margin-top: 10px;
     }
+    .juno-button-container.debug-container {
+        margin-bottom: 10px;
+    }
 
     .juno-button,
     .cancel-button {
@@ -130,10 +133,10 @@ function removeEditButton(cell) {
 }
 
 function addAcceptCancel(cell) {
-    if (cell.element.find('.juno-button-container').length) {
+    if (cell.element.find('.accept-cancel-container').length) {
         return cell
     }
-    let row = $('<div>', {class: 'juno-button-container'});
+    let row = $('<div>', {class: 'juno-button-container accept-cancel-container'});
     row.html(
             '<button type="button" class="juno-button accept-button" style="margin-left: 89px;" onclick="window.JunoEditZones.accept(&#39;' + cell.cell_id + '&#39;)">Accept</button>' +
             '<button type="button" class="cancel-button" style="margin-left: 5px;" onclick="window.JunoEditZones.cancel(&#39;' + cell.cell_id + '&#39;)">Cancel</button>'
@@ -147,24 +150,10 @@ function removeAcceptCancel(cell) {
     if(cell == null) {
         return;
     }
-    let row = cell.element.find('.juno-button-container');
+    let row = cell.element.find('.accept-cancel-container');
     if(row.length){
         row.remove();
     }
-}
-
-function addAcceptButton(cell) {
-    let buttonDiv = $('<div>', {class: 'accept'});
-    let existing_button = cell.element.find('.accept-container');
-    if (!existing_button.length) {
-        buttonDiv.html(
-            '<div class="accept-container">' +
-            '  <button type="button" style="margin-left: 94px;" onclick="window.JunoEditZones.accept(&#39;' + cell.cell_id + '&#39;)">Accept</button>' +
-            '</div>');
-        buttonDiv.find('button').prop('disabled', true);
-        cell.element.append(buttonDiv);
-    }
-    return cell;
 }
 
 function enableAcceptButton(cell) {
@@ -177,39 +166,6 @@ function enableAcceptButton(cell) {
     existing_button.prop('disabled', false);
 }
 
-function removeAcceptButton(cell) {
-    if(cell == null) {
-        return;
-    }
-    let existing_button = cell.element.find('.accept-container');
-    if(existing_button.length){
-        existing_button.remove();
-    }
-}
-
-function addCancelButton(cell) {
-    let buttonDiv = $('<div>', {class: 'cancel'});
-    let existing_button = cell.element.find('.cancel-container');
-    if (!existing_button.length) {
-        buttonDiv.html(
-            '<div class="cancel-container">' +
-            '  <button type="button" style="margin-left: 94px;" onclick="window.JunoEditZones.cancel(&#39;' + cell.cell_id + '&#39;)">Cancel</button>' +
-            '</div>');
-        cell.element.append(buttonDiv);
-    }
-    return cell;
-}
-
-function removeCancelButton(cell) {
-    if(cell == null) {
-        return;
-    }
-    let existing_button = cell.element.find('.cancel-container');
-    if(existing_button.length){
-        existing_button.remove();
-    }
-}
-
 function openEditor(cellId, debugging=false) {
     console.log("opening editor for cell " + cellId)
     console.log("edit zones:", window.JunoEditZones)
@@ -218,57 +174,55 @@ function openEditor(cellId, debugging=false) {
 }
 
 function addFixButton(cell, i) {
-    let buttonDiv = $('<div>', {class: 'debug'});
-    let existing_button = cell.element.find('.fix-container');
-    if (!existing_button.length) {
-        buttonDiv.html(
-            '<div class="fix-container">' +
-            '  <button type="button" style="margin-left: 94px;" onclick="window.openEditor(&#39;' + cell.cell_id + '&#39;, true)">Debug</button>' +
-            '<div id="explanation-' + i + '" class="explanation" style="margin-left: 94px; margin-top: 10px;"></div>' +
-            '</div>');
-        cell.element.append(buttonDiv);
+    if (cell.element.find('.debug-container').length) {
+        return cell
     }
+    let row = $('<div>', {class: 'juno-button-container debug-container'});
+    row.html(
+            '<button type="button" class="juno-button debug-button" style="margin-left: 93px;" onclick="window.openEditor(&#39;' + cell.cell_id + '&#39;, true)">Debug</button>'
+    );    
+    cell.element.append(row);
     return cell;
 }
 
 function removeFixButton(cell) {
-    let button = cell.element.find('.fix-container');
-    if (button.length) {
-        button.remove();
+    if(cell == null) {
+        return;
     }
-}
-
-function removeUpdateCodeButton(cell) {
-    let button = cell.element.find('.sub-container');
-    if (button.length) {
-        button.remove();
+    let row = cell.element.find('.debug-container');
+    if(row.length){
+        row.remove();
     }
 }
 
 function cellHasErrorOutput(cell) {
-    let hasError = false;
-    cell.output_area.outputs.forEach(output => {
+    console.log("checking cell:", cell.cell_id)
+    if (!cell.output_area || ! cell.output_area.outputs) {
+        console.log("cell-id:", cell.cell_id, "no outputs")
+        return false;
+    }
+    // if any output has output_type === 'error', then the cell has an error
+    for (const output of cell.output_area.outputs) {
         if (output.output_type === 'error') {
-            hasError = true;
+            return true;
         }
-    });
-    return hasError;
+    }
+    return false;
 }
 
-function addRemoveButtons(addOnly) {
-    setTimeout(() => {
-        let cells = Jupyter.notebook.get_cells();
-        for (let i = 0; i < cells.length; i++) {
-            let cell = cells[i];
-            let cellHasError = cell.output_area.outputs.length > 0 && cellHasErrorOutput(cell);
-            if (cellHasError) {
-                addFixButton(cell, i);
-            }
-            else if (!addOnly && !cellHasError) {
-                removeFixButton(cell);
-            }
+function cleanDebugButtons(addOnly) {    
+    let cells = Jupyter.notebook.get_cells();
+    for (let i = 0; i < cells.length; i++) {
+        let cell = cells[i];
+        console.log("cell:", cell)
+        let shouldShowDebugButton = cellHasErrorOutput(cell) && !window.JunoEditZones.isEditCell(cell);
+        if (shouldShowDebugButton ) {
+            addFixButton(cell, i);
         }
-    }, 100);
+        else if (!addOnly && !shouldShowDebugButton) {
+            removeFixButton(cell);
+        }
+    }
 }
 
 function addEditButtons() {
@@ -295,6 +249,9 @@ class EditZone {
     _init() {
         console.log("initializing edit zone for cell " + this.cell)
         removeEditButton(this.cell);
+        if(this.debugging) {
+            removeFixButton(this.cell);
+        }
         this.cell.element.addClass('edit-box-top');
         this.cell.element.addClass('edit-box');
         this.addEditCell();
@@ -346,6 +303,11 @@ class EditZone {
         this.cell.element.removeClass('edit-box-top');
         this.cell.element.removeClass('edit-box');
         addEditButton(this.cell);
+        if(!accepted && this.debugging) {
+            if (cellHasErrorOutput(this.cell)) {
+                addFixButton(this.cell);
+            }
+        }
     }
     
     handleDeleteCell(cell) {
@@ -496,8 +458,13 @@ if(!window.juno_initialized){
     window.openEditor = openEditor;
     Jupyter.notebook.events.off('output_appended.OutputArea');
     Jupyter.notebook.events.off('execute.CodeCell');
-    Jupyter.notebook.events.on('output_appended.OutputArea', null, () => setTimeout(() => addRemoveButtons(true), 200));
-    Jupyter.notebook.events.on('execute.CodeCell', null, () => setTimeout(() => addRemoveButtons(false), 50));
+    Jupyter.notebook.events.on('output_appended.OutputArea', null, () => {
+            console.log("output appended")
+            setTimeout(() => cleanDebugButtons(true), 400)
+            setTimeout(() => cleanDebugButtons(true), 800)
+        }
+    );
+    Jupyter.notebook.events.on('execute.CodeCell', null, () => setTimeout(() => cleanDebugButtons(false), 400));
     // when cell is created, add edit button
     Jupyter.notebook.events.on('create.Cell', () => {
         setTimeout(() => addEditButtons(), 150)
