@@ -210,11 +210,11 @@ function removeCancelButton(cell) {
     }
 }
 
-function openEditor(cellId) {
+function openEditor(cellId, debugging=false) {
     console.log("opening editor for cell " + cellId)
     console.log("edit zones:", window.JunoEditZones)
     let cell = Jupyter.notebook.get_cells().find(cell => cell.cell_id == cellId);
-    window.JunoEditZones.createZone(cell);
+    window.JunoEditZones.createZone(cell, debugging);
 }
 
 function addFixButton(cell, i) {
@@ -223,7 +223,7 @@ function addFixButton(cell, i) {
     if (!existing_button.length) {
         buttonDiv.html(
             '<div class="fix-container">' +
-            '  <button type="button" style="margin-left: 94px;" onclick="window.openEditor(&#39;' + cell.cell_id + '&#39;)">Debug</button>' +
+            '  <button type="button" style="margin-left: 94px;" onclick="window.openEditor(&#39;' + cell.cell_id + '&#39;, true)">Debug</button>' +
             '<div id="explanation-' + i + '" class="explanation" style="margin-left: 94px; margin-top: 10px;"></div>' +
             '</div>');
         cell.element.append(buttonDiv);
@@ -284,7 +284,7 @@ function addEditButtons() {
 window.addEditButtons = addEditButtons;
 
 class EditZone {
-    constructor(cell, debugging = true) {
+    constructor(cell, debugging) {
         this.cell = cell;
         this.editCells = [];
         this.accepted = false;
@@ -424,12 +424,12 @@ class EditZoneManager {
         }
     }
     
-    createZone(cell) {
+    createZone(cell, debugging) {
         if (this.editZones[cell.cell_id]) {
             return;
         }
         console.log("new edit zone")
-        this.editZones[cell.cell_id] = new EditZone(cell);
+        this.editZones[cell.cell_id] = new EditZone(cell, debugging);
     }
     
     handleDeleteCell(cell) {
