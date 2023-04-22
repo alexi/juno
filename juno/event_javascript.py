@@ -447,7 +447,6 @@ class EditZoneManager {
         }
     }
 }
-
 """
 
 LISTENER_JS = """
@@ -480,3 +479,31 @@ if(!window.juno_initialized){
 }
 
 """
+
+DISPLAY_JUNO_INFO = """
+
+function displayJunoInfo(version) {{
+    let cell = Jupyter.notebook.get_cells().find(cell => cell.cell_type === "code" && cell.get_text().includes("%load_ext juno"))
+    if (!cell) {{
+        return;
+    }}
+    // add juno info below cell output area
+    let outputArea = cell.output_area;
+    let junoInfo = document.createElement("div");
+    junoInfo.id = "juno-info";
+    junoInfo.style = "margin-top: 10px; margin-bottom: 10px; padding: 10px; border: 1px solid #e6e6e6; border-radius: 3px; background-color: #f9f9f9; font-size: 12px; color: #666;";
+    if(version && version !== ""){{
+    }}
+    // list the commands juno can run with explanations
+    junoInfo.innerHTML = "Juno is your data science co-pilot. Here are some things you can do with Juno:<br><br>" +
+        "<b>%chat</b> - prompt juno to write code for you<br>" +
+        "<b>✎ edit</b> - prompt juno to edit a cell for you<br>" +
+        "<b>🪲 debug</b> - have juno automatically fix your code when it outputs an error<br>"
+    outputArea.element.append(junoInfo);
+}}
+displayJunoInfo({version});
+
+"""
+
+def get_info_injection(version):
+    return DISPLAY_JUNO_INFO.format(version=version)

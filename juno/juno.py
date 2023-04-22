@@ -2,7 +2,7 @@ import base64
 import json
 from IPython.display import Javascript, clear_output, display, HTML
 
-from .event_javascript import BUTTON_HANDLERS, LISTENER_JS
+from .event_javascript import BUTTON_HANDLERS, LISTENER_JS, get_info_injection
 from .prompting_javascript import write_edit_stream, write_completion_stream
 
 
@@ -14,7 +14,7 @@ def chat(command, notebook_state):
     
 
 def hack():
-    display(Javascript(BUTTON_HANDLERS + LISTENER_JS))
+    display(Javascript(BUTTON_HANDLERS + LISTENER_JS + get_info_injection('')))
 
 
 def edit(command, notebook_state):
