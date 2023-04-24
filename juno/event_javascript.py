@@ -196,9 +196,7 @@ function removeFixButton(cell) {
 }
 
 function cellHasErrorOutput(cell) {
-    console.log("checking cell:", cell.cell_id)
     if (!cell.output_area || ! cell.output_area.outputs) {
-        console.log("cell-id:", cell.cell_id, "no outputs")
         return false;
     }
     // if any output has output_type === 'error', then the cell has an error
@@ -212,9 +210,7 @@ function cellHasErrorOutput(cell) {
 
 function cleanDebugButtons(addOnly) {    
     let cells = Jupyter.notebook.get_cells();
-    for (let i = 0; i < cells.length; i++) {
-        let cell = cells[i];
-        console.log("cell:", cell)
+    for (const [i, cell] of cells.entries()) {
         let shouldShowDebugButton = cellHasErrorOutput(cell) && !window.JunoEditZones.isEditCell(cell);
         if (shouldShowDebugButton ) {
             addFixButton(cell, i);
@@ -457,10 +453,10 @@ if(!window.juno_initialized){
     window.openEditor = openEditor;
     Jupyter.notebook.events.off('output_appended.OutputArea');
     Jupyter.notebook.events.off('execute.CodeCell');
-    Jupyter.notebook.events.on('output_appended.OutputArea', null, () => {
-            console.log("output appended")
+    Jupyter.notebook.events.on('output_appended.OutputArea', ( data) => {
             setTimeout(() => cleanDebugButtons(true), 400)
             setTimeout(() => cleanDebugButtons(false), 800)
+            setTimeout(() => cleanDebugButtons(false), 2000)
         }
     );
     Jupyter.notebook.events.on('execute.CodeCell', null, () => setTimeout(() => cleanDebugButtons(false), 400));
@@ -470,6 +466,7 @@ if(!window.juno_initialized){
         setTimeout(() => addEditButtons(), 400)
     });
     setInterval(() => addEditButtons(), 3000);
+    setInterval(() => cleanDebugButtons(true), 3000);
     // when cell is deleted call JunoEditZones.handleDeleteCell
     Jupyter.notebook.events.on('delete.Cell', (event, data) => JunoEditZones.handleDeleteCell(data.cell));
     addEditButtons();

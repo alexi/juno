@@ -1,6 +1,10 @@
-# Juno
+# juno
 
-Juno brings an AI collaborator into your Jupyter notebook. Juno has access to your entire notebook when it is answering your questions, and it can debug your code for you or write custom code for you.
+Juno is an AI collaborator for your Jupyter notebooks. Ask `juno` to write full cells of code and answer questions about your data. Juno understands your notebook context, and can even auto-debug your code as you go.
+
+<h2 align="center">Demo April 24th 2023 </h2>
+
+![juno demo](media/juno-demo.mp4)
 
 ## Getting Started Guide
 

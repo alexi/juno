@@ -39,10 +39,10 @@ def load_ipython_extension(ip, **kwargs):
         ip.register_magics(Assistant)
         setup()
         _loaded = True
+    else:
+        setup()
 
 def unload_ipython_extension(ip):
     global _loaded
     if _loaded:
-        magic = ip.magics_manager.registry.pop('MatlabMagics')
-        magic.Matlab.stop()
         _loaded = False
