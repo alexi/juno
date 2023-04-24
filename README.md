@@ -4,7 +4,7 @@ Juno is an AI collaborator for your Jupyter notebooks. Ask `juno` to write full 
 
 <h2 align="center">Demo April 24th 2023 </h2>
 
-![juno demo](media/juno-demo.mp4)
+https://user-images.githubusercontent.com/100244608/234126991-930b45f7-526a-4b45-8f98-859015e2fe88.mp4
 
 ## Getting Started Guide
 
