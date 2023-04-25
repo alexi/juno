@@ -495,7 +495,9 @@ function displayJunoInfo(version) {{
     junoInfo.innerHTML = "Juno is your data science co-pilot. Here are some things you can do with Juno:<br><br>" +
         "<b>%juno</b> - prompt juno to write code for you<br>" +
         "<b>✎ edit</b> - prompt juno to edit a cell for you<br>" +
-        "<b>🪲 debug</b> - have juno automatically fix your code when it outputs an error<br>"
+        "<b>🪲 debug</b> - have juno automatically fix your code when it outputs an error<br>" +
+        "<div style='display: block;width: 100%;height: 1px;background-color: color(srgb 0.765 0.765 0.765);margin-top: 10px;margin-bottom: 10px;'></div>" +
+        "<b><span style=''>%feedback</span></b> - send us some feedback on the alpha 🙏<br>"
     outputArea.element.append(junoInfo);
 }}
 displayJunoInfo({version});

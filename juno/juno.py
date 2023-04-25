@@ -3,7 +3,7 @@ import json
 from IPython.display import Javascript, clear_output, display, HTML
 
 from .event_javascript import BUTTON_HANDLERS, LISTENER_JS, get_info_injection
-from .prompting_javascript import write_edit_stream, write_completion_stream
+from .prompting_javascript import write_edit_stream, write_completion_stream, submit_feedback
 
 
 def chat(command, notebook_state):
@@ -28,5 +28,10 @@ def debug(_, notebook_state):
     command = ""
     encoded_nb_state = base64.b64encode(json.dumps(notebook_state).encode('utf-8')).decode('utf-8')
     completion_js = write_edit_stream(command, encoded_nb_state, True, 5, True)
+    display(Javascript(LISTENER_JS + completion_js))
+    clear_output()
+
+def feedback(command):
+    completion_js = submit_feedback(command)
     display(Javascript(LISTENER_JS + completion_js))
     clear_output()

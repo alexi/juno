@@ -37,9 +37,51 @@ function getErrorOutput(cell) {
 }
 """
 
+def submit_feedback(feedback):
+    return """
+
+// Back up one cell from the current selection to get the one with the command
+let startCell = Jupyter.notebook.get_selected_index() - 1;
+let cell = Jupyter.notebook.get_cell(startCell);
+async function sendFeedback() {{
+    let context, errorContent;
+    let startingCellText = cell.get_text()
+    let text = startingCellText.replace("%feedback ", "")
+    // Select the cell with the command
+    let cell_id = cell.cell_id;
+    
+    const payload = {{
+        "message": `{feedback}`,
+        "visitor_id": localStorage.getItem("visitor_id"),
+        "user_id": localStorage.getItem("user_id"),
+        "timestamp": Date.now(),
+    }};
+    await fetch("https://api.struct.network/feedback", {{
+        method: "POST",
+        headers: {{
+            "Content-Type": "application/json"
+        }},
+        body: JSON.stringify(payload),
+        onMessage(message) {{
+            console.log("message")
+        }}
+    }})
+    // add thank you message below cell
+    let outputArea = cell.output_area;
+    let junoInfo = document.createElement("div");
+    junoInfo.id = "juno-info";
+    junoInfo.style = "margin-top: 10px; margin-bottom: 10px; padding: 10px; border: 1px solid #e6e6e6; border-radius: 3px; background-color: #f9f9f9; font-size: 12px; color: #666;";
+    // list the commands juno can run with explanations
+    junoInfo.innerHTML = "Thank you for your feedback!"
+    outputArea.element.append(junoInfo);
+}}
+if ((Date.now() / 1000) - {current_time} < 2) {{
+    sendFeedback();
+}}
+    """.format(feedback=feedback, current_time=round(time()))
+
 GET_ANSWER_CODE = """
 async function getCompletion(callback, endpoint, payload, doneCallback) {{
-    console.log("doneCallback", doneCallback)
 
     payload["visitor_id"] = localStorage.getItem("visitor_id")
     payload["user_id"] = localStorage.getItem("user_id")

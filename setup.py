@@ -10,7 +10,7 @@ print('packages:', [package for package in find_packages()
 setup(
     name='juno-ai', 
     # version=__version__, 
-    version='0.0.2',
+    version='0.0.3',
     packages=[package for package in find_packages()
                 if package.startswith('juno')], 
     long_description='Juno AI Assistant for Jupyter Notebook',
