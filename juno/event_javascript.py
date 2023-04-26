@@ -497,7 +497,7 @@ function displayJunoInfo(version) {{
         "<b>✎ edit</b> - prompt juno to edit a cell for you<br>" +
         "<b>🪲 debug</b> - have juno automatically fix your code when it outputs an error<br>" +
         "<div style='display: block;width: 100%;height: 1px;background-color: color(srgb 0.765 0.765 0.765);margin-top: 10px;margin-bottom: 10px;'></div>" +
-        "<b>%disable_data / enable_data</b> - disable/enable juno to use shallow, PII-filtered samples of your data to improve results. (ON BY DEFAULT)<br>" +
+        "<b>%disable_data / enable_data</b> - disable/enable shallow, PII-filtered data samples that <i>dramatically</i> improve juno's performance. (ON BY DEFAULT)<br>" +
         "<b><span style=''>%feedback</span></b> - send us some feedback on the alpha 🙏<br>"
     outputArea.element.append(junoInfo);
 }}
