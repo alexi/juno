@@ -28,10 +28,11 @@ function replaceLastOccurrence(str, search, replacement) {{
 
 GET_ERROR = """
 function getErrorOutput(cell) {
-    let errorOutputs = cell.output_area.outputs.filter( output => output.output_type === 'error')
+    let errorOutputs = cell.output_area.outputs.filter(output => output.output_type === 'error');
     if (errorOutputs.length > 0) {
         let error = errorOutputs[0];
-        return `${error.ename}: ${error.evalue}`;
+        let traceback = error.traceback.join('\\n');
+        return `${error.ename}: ${error.evalue}\\n${traceback}`;
     }
     return "";
 }
