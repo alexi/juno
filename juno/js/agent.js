@@ -175,6 +175,11 @@ class AgentManager {
     
     handle_agent_start_response(response) {
         console.log("handle_agent_start_response response:", response)
+        setTimeout(() => {
+            Jupyter.notebook.select(cellIndex + 1);
+            let _cell = Jupyter.notebook.get_cell(cellIndex + 1);
+            _cell.focus_editor()
+        }, 200);
         this.get_next();
     }
     
@@ -188,6 +193,10 @@ class AgentManager {
     
     handle_cell_executed(cell) {
         console.log("handle_cell_executed id:", cell.cell_id)
+        // ignore on the initial agent cell
+        if (this.agent.cells.length == 1){
+            return
+        }
         let _cell = this.agent.cells[this.agent.cells.length - 1]
         console.log("last-cell-id:", _cell.cell_id)
         if(cell.cell_id != _cell.cell_id) {
