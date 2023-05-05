@@ -1,5 +1,5 @@
 from IPython.core.magic import (Magics, magics_class, line_magic, cell_magic, needs_local_scope)
-from .juno import chat, debug, edit, feedback
+from .juno import chat, debug, edit, feedback, start_agent, agent_action
 from .serialize_context import variable_description, set_values_enabled
 from .client_setup import setup
 
@@ -43,6 +43,16 @@ class Assistant(Magics):
     @line_magic
     def disable_data(self, line, local_ns=None):
         set_values_enabled(False)
+        
+    @line_magic
+    @needs_local_scope
+    def agent(self, line, local_ns=None):
+        return start_agent(line, variable_description(local_ns))
+    
+    @line_magic
+    @needs_local_scope
+    def action(self, line, local_ns=None):
+        return agent_action(line, variable_description(local_ns))
 
 _loaded = False
 def load_ipython_extension(ip, **kwargs):

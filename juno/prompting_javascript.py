@@ -28,11 +28,10 @@ function replaceLastOccurrence(str, search, replacement) {{
 
 GET_ERROR = """
 function getErrorOutput(cell) {
-    let errorOutputs = cell.output_area.outputs.filter(output => output.output_type === 'error');
+    let errorOutputs = cell.output_area.outputs.filter( output => output.output_type === 'error')
     if (errorOutputs.length > 0) {
         let error = errorOutputs[0];
-        let traceback = error.traceback.join('\\n');
-        return `${error.ename}: ${error.evalue}\\n${traceback}`;
+        return `${error.ename}: ${error.evalue}`;
     }
     return "";
 }
@@ -57,7 +56,7 @@ async function sendFeedback() {{
         "user_id": localStorage.getItem("user_id"),
         "timestamp": Date.now(),
     }};
-    await fetch("https://api.struct.network/feedback", {{
+    await fetch(window.juno_api_endpoint + "feedback", {{
         method: "POST",
         headers: {{
             "Content-Type": "application/json"
@@ -86,8 +85,11 @@ async function getCompletion(callback, endpoint, payload, doneCallback) {{
 
     payload["visitor_id"] = localStorage.getItem("visitor_id")
     payload["user_id"] = localStorage.getItem("user_id")
+    if (localStorage.getItem("agent") !== null) {{
+        payload["agent"] = localStorage.getItem("agent")
+    }}
 
-    await fetchSSE("https://api.struct.network/" + endpoint, {{
+    await fetchSSE(window.juno_api_endpoint + endpoint, {{
         method: "POST",
         headers: {{
             "Content-Type": "application/json"

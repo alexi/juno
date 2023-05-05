@@ -1,4 +1,7 @@
+import os
 from .prompting_javascript import GET_ANSWER_CODE, GET_ERROR, GET_CONTEXT
+
+AGENT_JS = open(os.path.join(os.path.dirname(__file__), 'js/agent.js')).read()
 
 BUTTON_HANDLERS = """
 
@@ -360,11 +363,6 @@ class EditZone {
     }
 }
 
-// generate random id
-function generateId() {
-    return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-}
-
 class EditZoneManager {
     constructor() {
         this.editZones = {};
@@ -449,17 +447,33 @@ LISTENER_JS = """
 if(!window.JunoEditZones){
     window.JunoEditZones = new EditZoneManager();
 }
+if(!window.AgentManager){
+    window.AgentManager = new AgentManager();
+}
 if(!window.juno_initialized){
+    window.juno_api_endpoint = 'http://127.0.0.1:8000/'
+    // window.juno_api_endpoint = 'https://api.struct.network/'
     window.openEditor = openEditor;
     Jupyter.notebook.events.off('output_appended.OutputArea');
     Jupyter.notebook.events.off('execute.CodeCell');
+    
+    let handleOutput = (debut_update) => {
+        cleanDebugButtons(debut_update)
+        window.AgentManager.handle_output_appended()
+    }
     Jupyter.notebook.events.on('output_appended.OutputArea', ( data) => {
-            setTimeout(() => cleanDebugButtons(true), 400)
-            setTimeout(() => cleanDebugButtons(false), 800)
-            setTimeout(() => cleanDebugButtons(false), 2000)
+            console.log("output appended data:", data)
+            setTimeout(() => handleOutput(true), 400)
+            setTimeout(() => handleOutput(false), 800)
+            setTimeout(() => handleOutput(false), 2000)
         }
     );
-    Jupyter.notebook.events.on('execute.CodeCell', null, () => setTimeout(() => cleanDebugButtons(false), 400));
+    Jupyter.notebook.events.on('execute.CodeCell', ( event, data ) => {
+            console.log("code cell executed - event:", event, "data:", data)
+            setTimeout(() => handleOutput(false), 400)
+            setTimeout(() => window.AgentManager.handle_cell_executed(data.cell), 400)
+        }
+    );
     // when cell is created, add edit button
     Jupyter.notebook.events.on('create.Cell', () => {
         setTimeout(() => addEditButtons(), 150)
@@ -497,7 +511,7 @@ function displayJunoInfo(version) {{
         "<b>✎ edit</b> - prompt juno to edit a cell for you<br>" +
         "<b>🪲 debug</b> - have juno automatically fix your code when it outputs an error<br>" +
         "<div style='display: block;width: 100%;height: 1px;background-color: color(srgb 0.765 0.765 0.765);margin-top: 10px;margin-bottom: 10px;'></div>" +
-        "<b>%disable_data / enable_data</b> - disable/enable shallow, PII-filtered data samples that <i>dramatically</i> improve juno's performance. (ON BY DEFAULT)<br>" +
+        "<b>%disable_sketch / enable_sketch</b> - disable/enable shallow, PII-filtered data sketches that <i>dramatically</i> improve juno's performance. (ON BY DEFAULT)<br>" +
         "<b><span style=''>%feedback</span></b> - send us some feedback on the alpha 🙏<br>"
     outputArea.element.append(junoInfo);
 }}
