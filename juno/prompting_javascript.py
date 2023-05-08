@@ -85,7 +85,14 @@ if ((Date.now() / 1000) - {current_time} < 2) {{
 }}
     """.format(feedback=feedback, current_time=round(time()))
 
-GET_ANSWER_CODE = """
+GET_ANSWER_CODE_SSE = """
+
+const createURLWithParams = (url, params) => {{
+  const urlObj = new URL(url);
+  Object.keys(params).forEach((key) => urlObj.searchParams.append(key, params[key]));
+  return urlObj.toString();
+}};
+
 async function getCompletion(callback, endpoint, payload, doneCallback) {{
 
     payload["visitor_id"] = localStorage.getItem("visitor_id")
@@ -93,7 +100,66 @@ async function getCompletion(callback, endpoint, payload, doneCallback) {{
     if (localStorage.getItem("agent") !== null) {{
         payload["agent"] = localStorage.getItem("agent")
     }}
+    
+    const url = createURLWithParams(window.juno_api_endpoint + endpoint, payload);
+    const source = new EventSource(url);
+    
+    source.onmessage = (event) => {{
+      message.split("data: ").forEach((dataString) => {{
+          dataString = dataString.trim();
+          if (dataString === "[DONE]") {{
+              console.log("COMPLETED receiving response ");
+              if (doneCallback !== undefined) {{
+                  doneCallback();
+              }}
+              return;
+          }}
+          try {{
+              const data = JSON.parse(dataString);
+              callback(data);
+          }} catch (e) {{
+              console.log("Error parsing data", dataString, e);
+          }}
+      }});
+    }}
+    
+    source.onerror = (e) => {{
+      console.log("handling error fetching", e);
+      if(e.status == 402) {{
+          console.log("opening signup page")
+          setTimeout(() => {{
+              window.open('http://localhost:3000/signup', '_blank');
+          }}, 10);
+          // get selected cell
+          let cell = Jupyter.notebook.get_selected_cell();
+          // print login prompt below cell
+          let outputArea = cell.output_area;
+          let junoInfo = document.createElement("div");
+          junoInfo.id = "juno-info";
+          junoInfo.style = "margin-left: 114px; margin-top: 10px; margin-bottom: 10px; padding: 10px; border: 1px solid #e6e6e6; border-radius: 3px; background-color: #f9f9f9; font-size: 12px; color: #666;";
+          // list the commands juno can run with explanations
+          junoInfo.innerHTML = "Please <a href='http://localhost:3000/signup' target='_blank'>signup</a> or <a href='http://localhost:3000/login' target='_blank'>login</a> to continue using Juno"
+          outputArea.element.append(junoInfo);
+      }}
+    }}
+    
+    if (doneCallback !== undefined) {{
+        doneCallback();
+    }}
+}}
 
+""".format()
+
+GET_ANSWER_CODE = """
+
+async function getCompletion(callback, endpoint, payload, doneCallback) {{
+
+    payload["visitor_id"] = localStorage.getItem("visitor_id")
+    payload["api_key"] = localStorage.getItem("api_key")
+    if (localStorage.getItem("agent") !== null) {{
+        payload["agent"] = localStorage.getItem("agent")
+    }}
+    
     await fetchSSE(window.juno_api_endpoint + endpoint, {{
         method: "POST",
         headers: {{
@@ -135,10 +201,10 @@ async function getCompletion(callback, endpoint, payload, doneCallback) {{
                 // print login prompt below cell
                 let outputArea = cell.output_area;
                 let junoInfo = document.createElement("div");
-                junoInfo.id = "juno-info";
-                junoInfo.style = "margin-top: 10px; margin-bottom: 10px; padding: 10px; border: 1px solid #e6e6e6; border-radius: 3px; background-color: #f9f9f9; font-size: 12px; color: #666;";
-                // list the commands juno can run with explanations
-                junoInfo.innerHTML = "Please <a href='http://localhost:3000/signup'>signup</a> to continue using Juno"
+                junoInfo.id = "juno-login-info";
+                junoInfo.style = "margin-left: 114px; margin-top: 10px; margin-bottom: 10px; padding: 10px; border: 1px solid #e6e6e6; border-radius: 3px; background-color: #f9f9f9; font-size: 12px; color: #666;";
+                junoInfo.innerHTML = "Please <a href='http://localhost:3000/signup' target='_blank'>signup</a> or <a href='http://localhost:3000/login' target='_blank'>login</a> to continue using Juno"
+                // add text input form for user to enter api key and call localStorage.setItem("api_key", api_key) on submit
                 outputArea.element.append(junoInfo);
             }}
         }}

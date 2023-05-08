@@ -472,6 +472,19 @@ if(!window.juno_initialized){
             console.log("code cell executed - event:", event, "data:", data)
             setTimeout(() => handleOutput(false), 400)
             setTimeout(() => window.AgentManager.handle_cell_executed(data.cell), 400)
+            
+            setTimeout(() => {
+                // if cell content starats with juno_api_key, delete cell
+                let cellText = data.cell.get_text()
+                if (cellText.startsWith("juno_api_key =")) {
+                    data.cell.clear_output();
+                    data.cell.set_text(cellText + " ✅")
+                    setTimeout(() => {
+                        let cellIndex = Jupyter.notebook.find_cell_index(data.cell);
+                        Jupyter.notebook.delete_cell(cellIndex);
+                    }, 1000)
+                }
+            }, 400)
         }
     );
     // when cell is created, add edit button
@@ -502,7 +515,7 @@ function displayJunoInfo(version) {{
     let outputArea = cell.output_area;
     let junoInfo = document.createElement("div");
     junoInfo.id = "juno-info";
-    junoInfo.style = "margin-top: 10px; margin-bottom: 10px; padding: 10px; border: 1px solid #e6e6e6; border-radius: 3px; background-color: #f9f9f9; font-size: 12px; color: #666;";
+    junoInfo.style = "margin-left:114px; margin-top: 10px; margin-bottom: 10px; padding: 10px; border: 1px solid #e6e6e6; border-radius: 3px; background-color: #f9f9f9; font-size: 12px; color: #666;";
     if(version && version !== ""){{
     }}
     // list the commands juno can run with explanations
