@@ -144,6 +144,15 @@ class Agent {
         this.starting_cell = starting_cell;
         this.cells = [this.starting_cell]
         this.session_id = generateId();
+        this.cell_states = {}
+    }
+    
+    get_cell_state(cell) {
+        return this.cell_states[cell.cell_id]
+    }
+    
+    set_cell_state(cell, state) {
+        this.cell_states[cell.cell_id] = state
     }
 }
 
@@ -154,6 +163,18 @@ class AgentManager {
     
     start(cell, prompt, nb_context) {
         this.agent = new Agent(cell);
+        // add spinner below the cell
+        let junoInfo = document.createElement("div");
+        junoInfo.id = "juno-agent-spinner";
+        junoInfo.style = "display: flex; align-items: center; margin-left:114px; margin-top: 10px; margin-bottom: 10px; padding: 10px; border: 1px solid #e6e6e6; border-radius: 3px; background-color: #f9f9f9; font-size: 12px; color: #666;";
+        // list the commands juno can run with explanations
+        junoInfo.innerHTML = "<div class='juno-spinner'></div><span style='padding-left:1px;'>planning...</span>"
+        setTimeout(() => {
+            let outputArea = cell.output_area;
+            console.log("starting cell output area:", outputArea)
+            
+            outputArea.element.append(junoInfo);
+        }, 400);
         call(
             'agent_start', 
             {
@@ -163,6 +184,8 @@ class AgentManager {
                 "prev_transcript": getContext(5)
             },
             (response) => {
+                // remove spinner
+                junoInfo.remove();
                 this.handle_agent_start_response(response);
             }
         )
@@ -175,7 +198,12 @@ class AgentManager {
     
     handle_agent_start_response(response) {
         console.log("handle_agent_start_response response:", response)
+        let startCell = this.agent.cells[this.agent.cells.length - 1]
+        let startingCellText = startCell.get_text()
+        let text = replaceLastOccurrence(startingCellText, "%agent", "# %agent")
+        startCell.set_text(text)
         setTimeout(() => {
+            let cellIndex = Jupyter.notebook.find_cell_index(startCell)
             Jupyter.notebook.select(cellIndex + 1);
             let _cell = Jupyter.notebook.get_cell(cellIndex + 1);
             _cell.focus_editor()
@@ -192,7 +220,7 @@ class AgentManager {
     }
     
     handle_cell_executed(cell) {
-        console.log("handle_cell_executed id:", cell.cell_id)
+        console.log("handle_cell_executed id:", cell.cell_id, "index:", Jupyter.notebook.find_cell_index(cell))
         // ignore on the initial agent cell
         if(!this.agent) { return }
         if (this.agent.cells.length == 1){
@@ -203,6 +231,18 @@ class AgentManager {
         if(cell.cell_id != _cell.cell_id) {
             return
         }
+        let state = this.agent.get_cell_state(cell)
+        if(!state){
+            console.log("initially query handle_cell_executed id:", cell.cell_id)
+            this.agent.set_cell_state(cell, "querying")
+            return
+        } else if (state == "querying") {
+            this.agent.set_cell_state(cell, "executed")
+        } else if (state == "executed") {
+            console.log("already handled handle_cell_executed id:", cell.cell_id)
+            return
+        }
+        console.log("continuing handle_cell_executed id:", cell.cell_id, "index:", Jupyter.notebook.find_cell_index(cell))
         let cellIndex = Jupyter.notebook.find_cell_index(cell)
         
         if (cellHasErrorOutput(cell)) {
@@ -213,8 +253,11 @@ class AgentManager {
             Jupyter.notebook.select(cellIndex + 1);
             let _cell = Jupyter.notebook.get_cell(cellIndex + 1);
             _cell.focus_editor()
-        }, 200);
-        this.get_next()
+        }, 20);
+        
+        setTimeout(() => {
+            this.get_next()
+        }, 20);
     }
     
     get_next() {
@@ -241,9 +284,9 @@ class AgentManager {
             }
             nextCell.set_text(response["message"])
             this.agent.cells.push(nextCell)
+            console.log("executing cell:", nextCell.cell_id, "index:", Jupyter.notebook.find_cell_index(nextCell), "i+1:", i+1)
             nextCell.execute()
-        }
-        else if (response["action"] === "done") {
+        } else if (response["action"] === "done") {
             this.done();
         }
     }
