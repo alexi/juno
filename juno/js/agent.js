@@ -33,7 +33,7 @@ async function fetchSSE(resource, options) {
 
 async function call(endpoint, payload, handleResponse){
     payload["visitor_id"] = localStorage.getItem("visitor_id")
-    payload["user_id"] = localStorage.getItem("user_id")
+    payload["api_key"] = localStorage.getItem("api_key")
     console.log("calling api endpoint:", endpoint, "with payload", payload)
     let resp = await fetch(window.juno_api_endpoint + endpoint, {
         method: "POST",
@@ -57,7 +57,7 @@ async function call(endpoint, payload, handleResponse){
 async function stream(endpoint, payload, handleStreamMessage, doneCallback) {
 
     payload["visitor_id"] = localStorage.getItem("visitor_id")
-    payload["user_id"] = localStorage.getItem("user_id")
+    payload["api_key"] = localStorage.getItem("api_key")
 
     await fetchSSE(window.juno_api_endpoint + endpoint, {
         method: "POST",
@@ -194,6 +194,7 @@ class AgentManager {
     handle_cell_executed(cell) {
         console.log("handle_cell_executed id:", cell.cell_id)
         // ignore on the initial agent cell
+        if(!this.agent) { return }
         if (this.agent.cells.length == 1){
             return
         }
@@ -248,6 +249,9 @@ class AgentManager {
     }
     
     async stream_action(command, ns, addContext, contextSize) {
+        if(!this.agent){
+            return
+        }
         // let cellIndex = Jupyter.notebook.get_selected_index() - 1;
         // let cell = Jupyter.notebook.get_cell(cellIndex);
         let cell = this.agent.cells[this.agent.cells.length - 1]

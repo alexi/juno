@@ -1,5 +1,10 @@
 from time import time
 
+def set_api_key(api_key):
+    return """
+localStorage.setItem("api_key", "{api_key}");
+""".format(api_key=api_key)
+
 GET_CONTEXT = """
 function getContext(contextSize, offsetCells) {{
     let prevCellContents = [];
@@ -53,7 +58,7 @@ async function sendFeedback() {{
     const payload = {{
         "message": `{feedback}`,
         "visitor_id": localStorage.getItem("visitor_id"),
-        "user_id": localStorage.getItem("user_id"),
+        "api_key": localStorage.getItem("api_key"),
         "timestamp": Date.now(),
     }};
     await fetch(window.juno_api_endpoint + "feedback", {{
@@ -84,7 +89,7 @@ GET_ANSWER_CODE = """
 async function getCompletion(callback, endpoint, payload, doneCallback) {{
 
     payload["visitor_id"] = localStorage.getItem("visitor_id")
-    payload["user_id"] = localStorage.getItem("user_id")
+    payload["api_key"] = localStorage.getItem("api_key")
     if (localStorage.getItem("agent") !== null) {{
         payload["agent"] = localStorage.getItem("agent")
     }}
@@ -98,10 +103,7 @@ async function getCompletion(callback, endpoint, payload, doneCallback) {{
         onMessage(message) {{
             message.split("data: ").forEach((dataString) => {{
                 dataString = dataString.trim();
-                if (dataString.length === 0) {{
-                    return;
-                }}
-                else if (dataString === "[DONE]") {{
+                if (dataString === "[DONE]") {{
                     console.log("COMPLETED receiving response ");
                     if (doneCallback !== undefined) {{
                         doneCallback();
@@ -120,35 +122,59 @@ async function getCompletion(callback, endpoint, payload, doneCallback) {{
             if (doneCallback !== undefined) {{
                 doneCallback();
             }}
+        }},
+        onError(e) {{
+            console.log("handling error fetching", e);
+            if(e.status == 402) {{
+                console.log("opening signup page")
+                setTimeout(() => {{
+                    window.open('http://localhost:3000/signup', '_blank');
+                }}, 10);
+                // get selected cell
+                let cell = Jupyter.notebook.get_selected_cell();
+                // print login prompt below cell
+                let outputArea = cell.output_area;
+                let junoInfo = document.createElement("div");
+                junoInfo.id = "juno-info";
+                junoInfo.style = "margin-top: 10px; margin-bottom: 10px; padding: 10px; border: 1px solid #e6e6e6; border-radius: 3px; background-color: #f9f9f9; font-size: 12px; color: #666;";
+                // list the commands juno can run with explanations
+                junoInfo.innerHTML = "Please <a href='http://localhost:3000/signup'>signup</a> to continue using Juno"
+                outputArea.element.append(junoInfo);
+            }}
         }}
     }});
-}}
-
-async function* streamAsyncIterable(stream) {{
-  const reader = stream.getReader();
-  try {{
-    while (true) {{
-      const {{ done, value }} = await reader.read();
-      if (done) {{
-        return;
-      }}
-      yield value;
-    }}
-  }} finally {{
-    reader.releaseLock();
-  }}
 }}
 
 async function fetchSSE(resource, options) {{
   const {{ onMessage, ...fetchOptions }} = options;
   // fetchOptions.credentials = "include";
-  const resp = await fetch(resource, fetchOptions);
-  for await (const chunk of streamAsyncIterable(resp.body)) {{
-    const message = new TextDecoder().decode(chunk);
-    onMessage(message);
-  }}
-  if(fetchOptions.onDone !== undefined) {{
-    fetchOptions.onDone();
+  try {{
+    const resp = await fetch(resource, fetchOptions);
+    if(!resp.ok) {{
+        if (options.onError !== undefined) {{
+            options.onError(resp);
+        }}
+        return;
+    }}
+    const decoder = new TextDecoder();
+    const reader = resp.body.getReader();
+
+    while (true) {{
+      const {{ done, value }} = await reader.read();
+      if (done) {{
+        break;
+      }}
+      const message = decoder.decode(value);
+      onMessage(message);
+    }}
+    if(fetchOptions.onDone !== undefined) {{
+        fetchOptions.onDone();
+    }}
+  }} catch (e) {{
+    console.log("Error fetching", e);
+    if (options.onError !== undefined) {{
+        options.onError(e);
+    }}
   }}
 }}
 
@@ -184,6 +210,7 @@ async function main() {{
         window.JunoEditZones.handleDoneStreaming('chat', cell_id)
     }}
     await getCompletion((answer) => {{
+      console.log("got answer chunk:", answer, "timestamp:", Date.now() / 1000)
       newText = answer;
       if (newText !== undefined) {{
         text += newText;

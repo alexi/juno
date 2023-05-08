@@ -3,12 +3,16 @@ import json
 from IPython.display import Javascript, clear_output, display, HTML
 
 from .event_javascript import AGENT_JS, BUTTON_HANDLERS, LISTENER_JS, get_info_injection
-from .prompting_javascript import write_edit_stream, write_completion_stream, submit_feedback
+from .prompting_javascript import write_edit_stream, write_completion_stream, submit_feedback, set_api_key
 from .agent_injection import inject_start_agent, inject_stream_action
 
-
+def _handle_api_key(notebook_state):
+    if 'juno_api_key' in notebook_state:
+        display(Javascript(set_api_key(notebook_state['juno_api_key']['value'])))
+        clear_output()
 
 def chat(command, notebook_state):
+    _handle_api_key(notebook_state)
     encoded_nb_state = base64.b64encode(json.dumps(notebook_state).encode('utf-8')).decode('utf-8')
     completion_js = write_completion_stream(command, encoded_nb_state, True, 5)
     display(Javascript(LISTENER_JS + completion_js))
@@ -20,6 +24,7 @@ def hack():
 
 
 def edit(command, notebook_state):
+    _handle_api_key(notebook_state)
     encoded_nb_state = base64.b64encode(json.dumps(notebook_state).encode('utf-8')).decode('utf-8')
     completion_js = write_edit_stream(command, encoded_nb_state, True, 5, False)
     display(Javascript(LISTENER_JS + completion_js))
@@ -27,6 +32,7 @@ def edit(command, notebook_state):
 
 
 def debug(_, notebook_state):
+    _handle_api_key(notebook_state)
     command = ""
     encoded_nb_state = base64.b64encode(json.dumps(notebook_state).encode('utf-8')).decode('utf-8')
     completion_js = write_edit_stream(command, encoded_nb_state, True, 5, True)
@@ -39,6 +45,7 @@ def feedback(command):
     clear_output()
 
 def start_agent(command, notebook_state):
+    _handle_api_key(notebook_state)
     encoded_nb_state = base64.b64encode(json.dumps(notebook_state).encode('utf-8')).decode('utf-8')
     completion_js = inject_start_agent(command, encoded_nb_state)
     display(Javascript(LISTENER_JS + completion_js))
