@@ -543,6 +543,7 @@ function displayJunoInfo(version) {{
         "<b>%juno</b> - prompt juno to write code for you<br>" +
         "<b>✎ edit</b> - prompt juno to edit a cell for you<br>" +
         "<b>🪲 debug</b> - have juno automatically fix your code when it outputs an error<br>" +
+        "<b>%agent</b> - give juno a more complex task to plan and execute over multiple steps<br>" +
         "<div style='display: block;width: 100%;height: 1px;background-color: color(srgb 0.765 0.765 0.765);margin-top: 10px;margin-bottom: 10px;'></div>" +
         "<b>%disable_sketch / enable_sketch</b> - disable/enable shallow, PII-filtered data sketches that <i>dramatically</i> improve juno's performance. (ON BY DEFAULT)<br>" +
         "<b><span style=''>%feedback</span></b> - send us some feedback on the alpha 🙏<br>"
