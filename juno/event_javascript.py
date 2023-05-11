@@ -471,8 +471,8 @@ if(!window.AgentManager){
     window.AgentManager = new AgentManager();
 }
 if(!window.juno_initialized){
-    window.juno_api_endpoint = 'http://127.0.0.1:8000/'
-    // window.juno_api_endpoint = 'https://api.struct.network/'
+    window.juno_url = 'https://getjuno.ai/'
+    window.juno_api_endpoint = 'https://api.getjuno.ai/'
     window.openEditor = openEditor;
     Jupyter.notebook.events.off('output_appended.OutputArea');
     Jupyter.notebook.events.off('execute.CodeCell');
