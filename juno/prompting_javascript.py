@@ -138,7 +138,7 @@ async function getCompletion(callback, endpoint, payload, doneCallback) {{
           junoInfo.id = "juno-info";
           junoInfo.style = "margin-left: 114px; margin-top: 10px; margin-bottom: 10px; padding: 10px; border: 1px solid #e6e6e6; border-radius: 3px; background-color: #f9f9f9; font-size: 12px; color: #666;";
           // list the commands juno can run with explanations
-          junoInfo.innerHTML = "Please <a href=window.juno_url + 'signup' target='_blank'>signup</a> or <a href=window.juno_url + 'login' target='_blank'>login</a> to continue using Juno"
+          junoInfo.innerHTML = "Please <a href='" + window.juno_url + "signup' target='_blank'>signup</a> or <a href='" + window.juno_url + "login' target='_blank'>login</a> to continue using Juno"
           outputArea.element.append(junoInfo);
       }}
     }}
@@ -203,7 +203,7 @@ async function getCompletion(callback, endpoint, payload, doneCallback) {{
                 let junoInfo = document.createElement("div");
                 junoInfo.id = "juno-login-info";
                 junoInfo.style = "margin-left: 114px; margin-top: 10px; margin-bottom: 10px; padding: 10px; border: 1px solid #e6e6e6; border-radius: 3px; background-color: #f9f9f9; font-size: 12px; color: #666;";
-                junoInfo.innerHTML = "Please <a href=window.juno_url + 'signup' target='_blank'>signup</a> or <a href=window.juno_url + 'login' target='_blank'>login</a> to continue using Juno"
+                junoInfo.innerHTML = "Please <a href='" + window.juno_url + "signup' target='_blank'>signup</a> or <a href='" + window.juno_url + "login' target='_blank'>login</a> to continue using Juno"
                 // add text input form for user to enter api key and call localStorage.setItem("api_key", api_key) on submit
                 outputArea.element.append(junoInfo);
             }}
