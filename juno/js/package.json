@@ -1,0 +1,16 @@
+{
+  "name": "juno",
+  "version": "0.0.1",
+  "description": "Juno AI copilot",
+  "main": "juno.js",
+  "license": "MIT",
+  "devDependencies": {
+    "browserify": "^17.0.0",
+    "uglify-js": "^3.17.4"
+  },
+  "scripts": {
+    "start": "watchify -o ./juno.min.js -v -d src/juno.js",
+    "build-old": "browserify . --standalone juno -t [envify --NODE_ENV production] -t [babelify --presets [es2015 react]] | uglifyjs -cm > ./juno.min.js",
+    "build": "browserify src/juno.js | uglifyjs -cm > ./juno.min.js"
+  }
+}
