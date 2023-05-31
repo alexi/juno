@@ -10,9 +10,11 @@ print('packages:', [package for package in find_packages()
 setup(
     name='juno-ai', 
     # version=__version__, 
-    version='0.0.5',
+    version='0.0.6',
     packages=[package for package in find_packages()
                 if package.startswith('juno')], 
+    package_data={'': ['js/juno.min.js']},
+    include_package_data=True,
     long_description='Juno AI Assistant for Jupyter Notebook',
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
