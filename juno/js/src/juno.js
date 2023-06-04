@@ -103,9 +103,4 @@ class Juno {
 
     // assign to global object
     global.juno = new Juno();
-    
-    global.juno_url = 'https://getjuno.ai/'
-    global.juno_api_endpoint = 'https://api.getjuno.ai/'
-    // global.juno_api_endpoint = 'http://127.0.0.1:8000/'
-
 })(window);
