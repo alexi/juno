@@ -20,8 +20,7 @@ git checkout main
 git merge --no-ff --no-commit private
 
 # Replace "http://127.0.0.1:8000/" with "https://api.getjuno.ai/" in all files in the juno/js/src directory
-find ./juno/js/src -type f -exec sed -i 's|http://127.0.0.1:8000/|https://api.getjuno.ai/|g' {} \;
-find ./juno/js -type f -exec sed -i 's|http://127.0.0.1:8000/|https://api.getjuno.ai/|g' {} \;
+sed -i 's|http://127.0.0.1:8000/|https://api.getjuno.ai/|g' ./juno/js/juno.min.js
 
 # Remove agent.js
 if git rev-parse --verify --quiet juno/js/src >/dev/null; then
