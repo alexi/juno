@@ -13,10 +13,19 @@ To use Juno, you need to install the Juno package.
 pip install juno-ai
 ```
 
-Then, load the extension in your Jupyter notebook.
+Or you can also install directly from your Jupyter notebook.
+```bash
+%pip install juno-ai
+```
+
+### Load the extension
+
+Load the extension into your current Jupyter notebook. 
 ```python
 %load_ext juno
 ```
+
+> For those new to Jupyter extensions, note you must load the extension at the top of each notebook.
 
 ## Using Juno
 
