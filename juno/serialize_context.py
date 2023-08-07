@@ -12,35 +12,48 @@ physical_address_pattern = r"\b(\d{1,6}\s([a-zA-z\.\s\-]+\s){0,3}([a-zA-z0-9\s]+
 def set_values_enabled(enabled):
     global VALUES_ENABLED
     VALUES_ENABLED = enabled
-    
+
+def sample_values(df, column, n=3) -> list:
+    """Randomly sample n values from a dataframe column"""
+    return [truncate_value(v) for v in df[column].sample(n).tolist()]
+
 def filter_dataframe_pii(df, column) -> list:
-    first_three_values = [truncate_value(v) for v in df[column].head(3).tolist()]
-    for i, value in enumerate(first_three_values):
+    values = sample_values(df, column)
+    for i, value in enumerate(values):
         if isinstance(value, str):
             if validators.uuid(value) and ('id' in column or 'user' in column):
-                    first_three_values[i] = '(uuid)'
+                values[i] = '(uuid)'
             elif validators.email(value):
-                first_three_values[i] = '(email)'
+                values[i] = '(email)'
             elif validators.ip_address.ipv4(value) or validators.ip_address.ipv6(value):
-                first_three_values[i] = '(ip_address)'
+                values[i] = '(ip_address)'
             elif validators.card.card_number(value):
-                first_three_values[i] = '(card_number)'
+                values[i] = '(card_number)'
             elif re.match(phone_pattern, value):
-                first_three_values[i] = '(phone)'
+                values[i] = '(phone)'
             elif re.match(physical_address_pattern, value):
-                first_three_values[i] = '(address)'
-    return first_three_values
+                values[i] = '(address)'
+    return values
+
+def get_col_description(df, column, max_length=50) -> str:
+    is_index = column == df.index.name
+    dtype = df[column].dtype
+    if VALUES_ENABLED:
+        values = filter_dataframe_pii(df, column)
+        return f"{column}, index: {is_index}, dtype: {dtype}. Sample of values: {values}"
+    else:
+        return f"{column}, index: {is_index}, dtype: {dtype}."
     
 def describe_dataframe(df, max_cols=20) -> str:
     description = []
-    for column in df.columns[:max_cols]:
-        is_index = column == df.index.name
-        dtype = df[column].dtype
-        if VALUES_ENABLED:
-            first_three_values = filter_dataframe_pii(df, column)
-            description.append(f"{column}, index: {is_index}, dtype: {dtype}. First three values: {first_three_values}")
-        else:
-            description.append(f"{column}, index: {is_index}, dtype: {dtype}.")
+    if len(df.columns) > max_cols:
+        for column in df.columns[:max_cols-1]: 
+            description.append(get_col_description(df, column))
+        description.append(f"... {len(df.columns) - max_cols + 1} more columns...")
+        description.append(get_col_description(df,  df.columns[-1]))
+    else:
+        for column in df.columns: 
+            description.append(get_col_description(df, column))
     full_description = "\n".join(description)
     shape_description = f"Shape: {df.shape}"
     return shape_description + '\nColumns:\n' + full_description
