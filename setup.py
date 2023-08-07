@@ -10,7 +10,7 @@ print('packages:', [package for package in find_packages()
 setup(
     name='juno-ai', 
     # version=__version__, 
-    version='0.0.7',
+    version='0.0.8',
     packages=[package for package in find_packages()
                 if package.startswith('juno')], 
     package_data={'': ['js/juno.min.js']},
